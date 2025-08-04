@@ -1,0 +1,19 @@
+# Settings to manage and configure a Firebase App Hosting backend.
+# https://firebase.google.com/docs/app-hosting/configure
+
+runConfig:
+  # Increase this value if you'd like to automatically spin up
+  # more instances in response to increased traffic.
+  maxInstances: 1
+  cpu: 1
+  memoryMiB: 1024
+
+# Secret Manager secrets available to your run environment
+# These are exposed as environment variables to your application.
+secretEnvironmentVariables:
+  - key: GOOGLE_PLACES_API_KEY # For /api/places
+    secret: Google_places # Using the secret name from your screenshot
+    # availableToBuild: false # Optional: defaults to false. Set to true if needed during build.
+  - key: GOOGLE_API_KEY # For Genkit GoogleAI plugin (Gemini)
+    secret: GOOGLE_AI_API_KEY # Using the secret name from your screenshot
+    # availableToBuild: false
