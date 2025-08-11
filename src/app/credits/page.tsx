@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { MainLayout } from '@/components/layout/main-layout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -48,7 +48,7 @@ import { useCreditPurchase } from '@/hooks/use-credit-purchase';
 import { CreditSystemStatus } from '@/components/credits/credit-system-status';
 import { PaymentSuccessModal } from '@/components/credits/payment-success-modal';
 
-export default function CreditsPage() {
+function CreditsPageContent() {
   const { user } = useAuth();
   const { userData, refreshUserData } = useUser();
   const { toast } = useToast();
@@ -248,5 +248,29 @@ export default function CreditsPage() {
         />
       </div>
     </MainLayout>
+  );
+}
+
+export default function CreditsPage() {
+  return (
+    <Suspense fallback={
+      <MainLayout>
+        <div className="max-w-6xl mx-auto space-y-8 p-6">
+          <div className="text-center space-y-4">
+            <div className="flex items-center justify-center gap-3">
+              <div className="p-3 rounded-xl bg-gradient-to-br from-yellow-500 to-amber-500 shadow-lg">
+                <Coins className="h-8 w-8 text-white" />
+              </div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 bg-clip-text text-transparent">
+                AI Credits
+              </h1>
+            </div>
+            <p className="text-lg text-muted-foreground">Loading...</p>
+          </div>
+        </div>
+      </MainLayout>
+    }>
+      <CreditsPageContent />
+    </Suspense>
   );
 }
