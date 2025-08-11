@@ -1,0 +1,252 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: var(--font-inter), sans-serif;
+}
+
+@layer base {
+  :root {
+    --background: 216 25% 95%; /* Light Gray #F0F2F5 */
+    --foreground: 224 71.4% 4.1%; /* Darker gray for text */
+
+    --card: 0 0% 100%;
+    --card-foreground: 224 71.4% 4.1%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 71.4% 4.1%;
+
+    --primary: 169 55% 64%; /* Light Teal #73D6C2 */
+    --primary-foreground: 210 20% 98%; /* White for contrast on Teal */
+
+    --secondary: 215 27.9% 90%; /* Slightly darker gray for secondary elements */
+    --secondary-foreground: 224 71.4% 4.1%;
+
+    --muted: 215 27.9% 90%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 253 100% 79%; /* Soft Lavender #A894FF */
+    --accent-foreground: 210 20% 98%; /* White for contrast on Lavender */
+
+    --destructive: 0 72.2% 50.6%;
+    --destructive-foreground: 210 20% 98%;
+
+    --border: 215 20.2% 85%; /* Lighter border */
+    --input: 215 20.2% 85%;
+    --ring: 169 55% 64%; /* Light Teal for rings */
+
+    --radius: 0.5rem;
+
+    /* Chart colors - can be adjusted or expanded */
+    --chart-1: 169 55% 64%; /* Teal */
+    --chart-2: 253 100% 79%; /* Lavender */
+    --chart-3: 220 80% 60%; /* A blue shade */
+    --chart-4: 30 80% 60%; /* An orange shade */
+    --chart-5: 120 40% 55%; /* A green shade */
+    
+    /* Sidebar specific theme */
+    --sidebar-background: 0 0% 100%; /* White sidebar */
+    --sidebar-foreground: 224 71.4% 4.1%; /* Dark text */
+    --sidebar-primary: 169 55% 64%; /* Teal for active/primary items */
+    --sidebar-primary-foreground: 210 20% 98%; /* White on Teal */
+    --sidebar-accent: 216 25% 92%; /* Very light gray for hover/accent */
+    --sidebar-accent-foreground: 224 71.4% 4.1%; /* Dark text on hover */
+    --sidebar-border: 215 20.2% 85%; /* Light border */
+    --sidebar-ring: 169 55% 64%; /* Teal for focus rings */
+
+    /* Badge Contact Status Colors - Light Theme (Used for surgeon cards etc.) */
+    --status-none-background: hsl(220, 13%, 91%);
+    --status-none-foreground: hsl(220, 9%, 46%);
+    --status-none-border: hsl(220, 10%, 84%);
+
+    --status-contacted-background: hsl(200, 80%, 92%); 
+    --status-contacted-foreground: hsl(200, 70%, 40%); 
+    --status-contacted-border: hsl(200, 70%, 82%);
+
+    --status-responded-background: hsl(280, 80%, 94%); 
+    --status-responded-foreground: hsl(280, 60%, 50%); 
+    --status-responded-border: hsl(280, 70%, 84%);
+
+    --status-pricegiven-background: hsl(40, 100%, 90%); 
+    --status-pricegiven-foreground: hsl(35, 80%, 45%);  
+    --status-pricegiven-border: hsl(40, 90%, 80%);
+
+    --status-consultdone-background: hsl(145, 70%, 92%); 
+    --status-consultdone-foreground: hsl(145, 55%, 40%); 
+    --status-consultdone-border: hsl(145, 60%, 82%);
+
+    --status-archived-background: hsl(220, 14%, 87%);
+    --status-archived-foreground: hsl(220, 13%, 41%);
+    --status-archived-border: hsl(220, 11%, 79%);
+  }
+
+  /* Dashboard Stat Card Colors - Light Theme */
+  .status-total {
+    --card: hsl(220, 100%, 97%);
+    --card-foreground: hsl(220, 50%, 30%);
+    border-left-color: hsl(220, 85%, 60%) !important;
+  }
+  .status-total .lucide { color: hsl(220, 85%, 60%); }
+
+  .status-favorite {
+    --card: hsl(45, 100%, 95%);
+    --card-foreground: hsl(45, 70%, 30%);
+    border-left-color: hsl(45, 100%, 55%) !important;
+  }
+  .status-favorite .lucide { color: hsl(45, 100%, 55%); }
+
+  .status-contacted {
+    --card: hsl(var(--status-contacted-background));
+    --card-foreground: hsl(var(--status-contacted-foreground));
+    border-left-color: hsl(200, 70%, 60%) !important;
+  }
+  .status-contacted .lucide { color: hsl(200, 70%, 50%); }
+
+  .status-responded {
+    --card: hsl(var(--status-responded-background));
+    --card-foreground: hsl(var(--status-responded-foreground));
+    border-left-color: hsl(280, 60%, 70%) !important;
+  }
+  .status-responded .lucide { color: hsl(280, 60%, 60%); }
+
+  .status-pricegiven {
+    --card: hsl(var(--status-pricegiven-background));
+    --card-foreground: hsl(var(--status-pricegiven-foreground));
+    border-left-color: hsl(35, 90%, 65%) !important;
+  }
+  .status-pricegiven .lucide { color: hsl(35, 80%, 55%); }
+
+  .status-consultdone {
+    --card: hsl(var(--status-consultdone-background));
+    --card-foreground: hsl(var(--status-consultdone-foreground));
+    border-left-color: hsl(145, 60%, 55%) !important;
+  }
+  .status-consultdone .lucide { color: hsl(145, 55%, 45%); }
+
+
+  .dark {
+    --background: 224 71.4% 4.1%; 
+    --foreground: 210 20% 98%;
+
+    --card: 224 71.4% 4.1%;
+    --card-foreground: 210 20% 98%;
+
+    --popover: 224 71.4% 4.1%;
+    --popover-foreground: 210 20% 98%;
+
+    --primary: 169 55% 64%; 
+    --primary-foreground: 224 71.4% 4.1%; 
+
+    --secondary: 215 27.9% 15%; 
+    --secondary-foreground: 210 20% 98%;
+
+    --muted: 215 27.9% 15%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 253 100% 79%; 
+    --accent-foreground: 224 71.4% 4.1%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 20% 98%;
+
+    --border: 215 20.2% 25%;
+    --input: 215 20.2% 25%;
+    --ring: 169 55% 64%;
+    
+    --chart-1: 169 55% 64%;
+    --chart-2: 253 100% 79%;
+    --chart-3: 220 80% 60%;
+    --chart-4: 30 80% 60%;
+    --chart-5: 120 40% 55%;
+
+    --sidebar-background: 224 71.4% 6%; /* Darker sidebar */
+    --sidebar-foreground: 210 20% 98%; /* Light text */
+    --sidebar-primary: 169 55% 64%; /* Teal */
+    --sidebar-primary-foreground: 224 71.4% 4.1%; /* Dark text on Teal */
+    --sidebar-accent: 215 27.9% 12%; /* Slightly lighter dark for hover */
+    --sidebar-accent-foreground: 210 20% 98%; /* Light text on hover */
+    --sidebar-border: 215 20.2% 20%; /* Dark border */
+    --sidebar-ring: 169 55% 64%; /* Teal for focus rings */
+
+    /* Badge Contact Status Colors - Dark Theme */
+    --status-none-background: hsl(220, 10%, 25%);
+    --status-none-foreground: hsl(220, 10%, 75%);
+    --status-none-border: hsl(220, 10%, 35%);
+
+    --status-contacted-background: hsl(200, 35%, 25%);
+    --status-contacted-foreground: hsl(200, 70%, 80%);
+    --status-contacted-border: hsl(200, 35%, 35%);
+
+    --status-responded-background: hsl(280, 35%, 28%);
+    --status-responded-foreground: hsl(280, 70%, 85%);
+    --status-responded-border: hsl(280, 35%, 38%);
+
+    --status-pricegiven-background: hsl(40, 45%, 25%);
+    --status-pricegiven-foreground: hsl(40, 100%, 78%);
+    --status-pricegiven-border: hsl(40, 45%, 35%);
+
+    --status-consultdone-background: hsl(145, 35%, 25%);
+    --status-consultdone-foreground: hsl(145, 65%, 78%);
+    --status-consultdone-border: hsl(145, 35%, 35%);
+    
+    --status-archived-background: hsl(220, 10%, 30%);
+    --status-archived-foreground: hsl(220, 10%, 65%);
+    --status-archived-border: hsl(220, 10%, 40%);
+
+    /* Dashboard Stat Card Colors - Dark Theme */
+    .dark .status-total {
+      --card: hsl(220, 30%, 15%);
+      --card-foreground: hsl(220, 100%, 90%);
+      border-left-color: hsl(220, 85%, 70%) !important;
+    }
+    .dark .status-total .lucide { color: hsl(220, 85%, 70%); }
+    
+    .dark .status-favorite {
+      --card: hsl(45, 40%, 15%);
+      --card-foreground: hsl(45, 100%, 85%);
+      border-left-color: hsl(45, 100%, 65%) !important;
+    }
+    .dark .status-favorite .lucide { color: hsl(45, 100%, 65%); }
+
+    .dark .status-contacted {
+      --card: hsl(var(--status-contacted-background));
+      --card-foreground: hsl(var(--status-contacted-foreground));
+      border-left-color: hsl(200, 70%, 70%) !important;
+    }
+    .dark .status-contacted .lucide { color: hsl(200, 70%, 70%); }
+    
+    .dark .status-responded {
+      --card: hsl(var(--status-responded-background));
+      --card-foreground: hsl(var(--status-responded-foreground));
+      border-left-color: hsl(280, 60%, 80%) !important;
+    }
+    .dark .status-responded .lucide { color: hsl(280, 60%, 80%); }
+
+    .dark .status-pricegiven {
+      --card: hsl(var(--status-pricegiven-background));
+      --card-foreground: hsl(var(--status-pricegiven-foreground));
+      border-left-color: hsl(35, 90%, 75%) !important;
+    }
+    .dark .status-pricegiven .lucide { color: hsl(35, 80%, 75%); }
+    
+    .dark .status-consultdone {
+      --card: hsl(var(--status-consultdone-background));
+      --card-foreground: hsl(var(--status-consultdone-foreground));
+      border-left-color: hsl(145, 60%, 65%) !important;
+    }
+    .dark .status-consultdone .lucide { color: hsl(145, 55%, 65%); }
+  }
+
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
