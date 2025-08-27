@@ -9,6 +9,7 @@ import { CheckCircle, Coins, Sparkles } from 'lucide-react';
 import { useUser } from '@/contexts/user-context';
 import { useAuth } from '@/contexts/auth-context';
 import { formatDate } from '@/lib/date-utils';
+import { getUserData } from '@/lib/user-api';
 
 interface PaymentSuccessModalProps {
   isOpen: boolean;
@@ -20,7 +21,15 @@ export function PaymentSuccessModal({ isOpen, onClose, sessionId }: PaymentSucce
   const { user } = useAuth();
   const { userData, refreshUserData } = useUser();
   const [creditsAdded, setCreditsAdded] = useState<number | null>(null);
+  const [currentBalance, setCurrentBalance] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    // Initialize current balance when modal opens
+    if (isOpen && userData?.aiCredits !== undefined) {
+      setCurrentBalance(userData.aiCredits);
+    }
+  }, [isOpen, userData?.aiCredits]);
 
   useEffect(() => {
     if (isOpen && sessionId && !creditsAdded) {
@@ -53,16 +62,30 @@ export function PaymentSuccessModal({ isOpen, onClose, sessionId }: PaymentSucce
               
               if (directResponse.ok) {
                 console.log('Credits added successfully:', directData);
+                // Wait a moment for Firestore to propagate the changes
+                await new Promise(resolve => setTimeout(resolve, 1000));
               } else {
                 console.error('Direct credit addition failed:', directData.error);
+                // Show error to user
+                alert(`Failed to add credits: ${directData.error}`);
               }
             } catch (directError) {
               console.error('Direct credit addition error:', directError);
+              alert(`Error adding credits: ${directError}`);
             }
           }
           
           // Refresh user data to show updated balance
-          return refreshUserData();
+          await refreshUserData();
+          
+          // Also fetch fresh user data directly to ensure we have the latest balance
+          if (user?.uid) {
+            const freshUserData = await getUserData(user.uid);
+            if (freshUserData.data) {
+              setCurrentBalance(freshUserData.data.aiCredits || 0);
+              console.log('Fresh user data fetched:', freshUserData.data.aiCredits);
+            }
+          }
         })
         .catch(error => {
           console.error('Error fetching session:', error);
@@ -140,7 +163,7 @@ export function PaymentSuccessModal({ isOpen, onClose, sessionId }: PaymentSucce
                 <span className="font-medium text-yellow-700">Current Balance</span>
               </div>
               <div className="text-3xl font-bold text-yellow-700">
-                {userData?.aiCredits || 0}
+                {currentBalance || userData?.aiCredits || 0}
               </div>
               <Badge variant="secondary" className="bg-yellow-100 text-yellow-700 border-yellow-300">
                 AI Credits Available

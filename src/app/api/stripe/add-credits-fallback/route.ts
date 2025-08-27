@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { addAICredits } from '@/app/user/actions';
+import { addAICredits } from '@/lib/user-api';
 import { stripe } from '@/lib/stripe';
 
 // Fallback endpoint to add credits when webhook isn't configured

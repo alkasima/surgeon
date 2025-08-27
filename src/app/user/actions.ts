@@ -1,7 +1,7 @@
 'use server';
 
-import { db } from '@/lib/firebase';
-import { doc, getDoc, setDoc, updateDoc, increment, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { adminDb } from '@/lib/firebase-admin';
+import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import type { UserData, AIFeatureType, UsageStats } from '@/types/user';
 import { AI_CREDIT_COSTS } from '@/types/user';
 
@@ -73,14 +73,14 @@ export async function getUserData(uid: string): Promise<{ data?: UserData; error
 }
 
 /**
- * Decrements the user's search credits by 1.
+ * Decrements the user's search credits by a specified amount (default 5 for surgeon searches).
  */
-export async function decrementSearchCredits(uid: string): Promise<{ success: boolean; error?: string }> {
+export async function decrementSearchCredits(uid: string, amount: number = 5): Promise<{ success: boolean; error?: string }> {
      if (!db) return { success: false, error: "Firestore not initialized." };
     try {
         const userDocRef = doc(db, 'users', uid);
         await updateDoc(userDocRef, {
-            searchCredits: increment(-1)
+            searchCredits: increment(-amount)
         });
         return { success: true };
     } catch (e) {
@@ -188,22 +188,71 @@ export async function addAICredits(uid: string, creditsToAdd: number): Promise<{
 }
 
 /**
+ * Adds search credits to user account (for purchases).
+ */
+export async function addSearchCredits(uid: string, creditsToAdd: number): Promise<{ success: boolean; newTotal?: number; error?: string }> {
+    if (!db) return { success: false, error: "Firestore not initialized." };
+    try {
+        const userDocRef = doc(db, 'users', uid);
+        await updateDoc(userDocRef, {
+            searchCredits: increment(creditsToAdd),
+            totalCreditsPurchased: increment(creditsToAdd),
+            lastCreditPurchase: serverTimestamp()
+        });
+
+        // Get updated credit count
+        const updatedDoc = await getDoc(userDocRef);
+        const newTotal = updatedDoc.exists() ? (updatedDoc.data() as UserData).searchCredits : 0;
+
+        return { success: true, newTotal };
+    } catch (e) {
+        console.error("Error adding search credits:", e);
+        return { success: false, error: e instanceof Error ? e.message : "An unknown error occurred." };
+    }
+}
+
+/**
  * Gets usage analytics for a user.
  */
 export async function getUserAnalytics(uid: string): Promise<{ analytics?: UsageStats; error?: string }> {
     if (!db) return { error: "Firestore not initialized." };
     try {
+        console.log('getUserAnalytics: Starting for uid:', uid);
         const userDocRef = doc(db, 'users', uid);
+        console.log('getUserAnalytics: Created doc reference');
         const docSnap = await getDoc(userDocRef);
+        console.log('getUserAnalytics: Got document snapshot, exists:', docSnap.exists());
 
         if (!docSnap.exists()) {
-            return { error: "User data not found." };
+            // Initialize user document if it doesn't exist
+            console.log("User document doesn't exist, initializing...");
+            const initResult = await initializeUserData(uid);
+            if (!initResult.success) {
+                return { error: initResult.error || "Failed to initialize user data." };
+            }
+            
+            // Return default analytics for new user
+            return { 
+                analytics: {
+                    summarizeNotesCount: 0,
+                    draftEmailCount: 0,
+                    analyzeSurgeonCount: 0,
+                    dailyUsage: {},
+                    monthlyUsage: {},
+                }
+            };
         }
 
         const userData = docSnap.data() as UserData;
+        console.log('getUserAnalytics: Got user data, usageStats:', userData.usageStats);
         return { analytics: userData.usageStats };
     } catch (e) {
-        console.error("Error getting user analytics:", e);
+        console.error("Error getting user analytics - detailed:", {
+            error: e,
+            message: e instanceof Error ? e.message : 'Unknown error',
+            code: (e as any)?.code,
+            uid: uid
+        });
         return { error: e instanceof Error ? e.message : "An unknown error occurred." };
     }
 }

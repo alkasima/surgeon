@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { addAICredits } from '@/app/user/actions';
+import { addAICredits } from '@/lib/user-api';
 
 // Direct credit addition for development/testing
 export async function POST(request: NextRequest) {

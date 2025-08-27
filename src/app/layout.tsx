@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from '@/contexts/auth-context';
 import { UserProvider } from '@/contexts/user-context';
 import { ErrorBoundary } from '@/components/error-boundary';
+import { InsufficientCreditsProvider } from '@/components/credits/insufficient-credits-provider';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -29,10 +30,12 @@ export default function RootLayout({
         <ErrorBoundary>
           <AuthProvider>
             <UserProvider>
-              <TooltipProvider delayDuration={0}>
-                {children}
-              </TooltipProvider>
-              <Toaster />
+              <InsufficientCreditsProvider>
+                <TooltipProvider delayDuration={0}>
+                  {children}
+                </TooltipProvider>
+                <Toaster />
+              </InsufficientCreditsProvider>
             </UserProvider>
           </AuthProvider>
         </ErrorBoundary>

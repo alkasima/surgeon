@@ -9,33 +9,33 @@ body {
 
 @layer base {
   :root {
-    --background: 216 25% 95%; /* Light Gray #F0F2F5 */
-    --foreground: 224 71.4% 4.1%; /* Darker gray for text */
+    --background: 0 0% 100%; /* White background */
+    --foreground: 0 0% 0%; /* Black text #000000 */
 
     --card: 0 0% 100%;
-    --card-foreground: 224 71.4% 4.1%;
+    --card-foreground: 0 0% 0%; /* Black text */
 
     --popover: 0 0% 100%;
-    --popover-foreground: 224 71.4% 4.1%;
+    --popover-foreground: 0 0% 0%; /* Black text */
 
-    --primary: 169 55% 64%; /* Light Teal #73D6C2 */
-    --primary-foreground: 210 20% 98%; /* White for contrast on Teal */
+    --primary: 0 0% 0%; /* Black #000000 */
+    --primary-foreground: 0 0% 100%; /* White text on black */
 
-    --secondary: 215 27.9% 90%; /* Slightly darker gray for secondary elements */
-    --secondary-foreground: 224 71.4% 4.1%;
+    --secondary: 210 40% 98%; /* Very light gray */
+    --secondary-foreground: 0 0% 0%; /* Black text */
 
-    --muted: 215 27.9% 90%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 210 40% 95%; /* Gray-100 #F3F4F6 */
+    --muted-foreground: 220 14% 44%; /* Gray-500 #6B7280 */
 
-    --accent: 253 100% 79%; /* Soft Lavender #A894FF */
-    --accent-foreground: 210 20% 98%; /* White for contrast on Lavender */
+    --accent: 0 0% 0%; /* Black for accent */
+    --accent-foreground: 0 0% 100%; /* White text on black */
 
     --destructive: 0 72.2% 50.6%;
-    --destructive-foreground: 210 20% 98%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 215 20.2% 85%; /* Lighter border */
-    --input: 215 20.2% 85%;
-    --ring: 169 55% 64%; /* Light Teal for rings */
+    --border: 220 13% 82%; /* Gray-300 #D1D5DB */
+    --input: 220 13% 82%; /* Gray-300 for inputs */
+    --ring: 0 0% 0%; /* Black for focus rings */
 
     --radius: 0.5rem;
 
@@ -48,22 +48,22 @@ body {
     
     /* Sidebar specific theme */
     --sidebar-background: 0 0% 100%; /* White sidebar */
-    --sidebar-foreground: 224 71.4% 4.1%; /* Dark text */
-    --sidebar-primary: 169 55% 64%; /* Teal for active/primary items */
-    --sidebar-primary-foreground: 210 20% 98%; /* White on Teal */
-    --sidebar-accent: 216 25% 92%; /* Very light gray for hover/accent */
-    --sidebar-accent-foreground: 224 71.4% 4.1%; /* Dark text on hover */
-    --sidebar-border: 215 20.2% 85%; /* Light border */
-    --sidebar-ring: 169 55% 64%; /* Teal for focus rings */
+    --sidebar-foreground: 0 0% 0%; /* Black text #000000 */
+    --sidebar-primary: 0 0% 0%; /* Black for active/primary items */
+    --sidebar-primary-foreground: 0 0% 100%; /* White on black */
+    --sidebar-accent: 210 40% 95%; /* Gray-100 #F3F4F6 for hover */
+    --sidebar-accent-foreground: 0 0% 0%; /* Black text on hover */
+    --sidebar-border: 220 13% 82%; /* Gray-300 border */
+    --sidebar-ring: 0 0% 0%; /* Black for focus rings */
 
     /* Badge Contact Status Colors - Light Theme (Used for surgeon cards etc.) */
-    --status-none-background: hsl(220, 13%, 91%);
-    --status-none-foreground: hsl(220, 9%, 46%);
-    --status-none-border: hsl(220, 10%, 84%);
+    --status-none-background: hsl(210, 40%, 95%);
+    --status-none-foreground: hsl(220, 14%, 44%);
+    --status-none-border: hsl(220, 13%, 82%);
 
-    --status-contacted-background: hsl(200, 80%, 92%); 
-    --status-contacted-foreground: hsl(200, 70%, 40%); 
-    --status-contacted-border: hsl(200, 70%, 82%);
+    --status-contacted-background: hsl(0, 0%, 95%); 
+    --status-contacted-foreground: hsl(0, 0%, 40%); 
+    --status-contacted-border: hsl(0, 0%, 82%);
 
     --status-responded-background: hsl(280, 80%, 94%); 
     --status-responded-foreground: hsl(280, 60%, 50%); 
@@ -77,22 +77,22 @@ body {
     --status-consultdone-foreground: hsl(145, 55%, 40%); 
     --status-consultdone-border: hsl(145, 60%, 82%);
 
-    --status-archived-background: hsl(220, 14%, 87%);
-    --status-archived-foreground: hsl(220, 13%, 41%);
-    --status-archived-border: hsl(220, 11%, 79%);
+    --status-archived-background: hsl(210, 40%, 95%);
+    --status-archived-foreground: hsl(220, 14%, 44%);
+    --status-archived-border: hsl(220, 13%, 82%);
   }
 
   /* Dashboard Stat Card Colors - Light Theme */
   .status-total {
-    --card: hsl(220, 100%, 97%);
-    --card-foreground: hsl(220, 50%, 30%);
-    border-left-color: hsl(220, 85%, 60%) !important;
+    --card: hsl(0, 0%, 97%);
+    --card-foreground: hsl(0, 0%, 0%);
+    border-left-color: hsl(0, 0%, 60%) !important;
   }
-  .status-total .lucide { color: hsl(220, 85%, 60%); }
+  .status-total .lucide { color: hsl(0, 0%, 60%); }
 
   .status-favorite {
     --card: hsl(45, 100%, 95%);
-    --card-foreground: hsl(45, 70%, 30%);
+    --card-foreground: hsl(0, 0%, 0%);
     border-left-color: hsl(45, 100%, 55%) !important;
   }
   .status-favorite .lucide { color: hsl(45, 100%, 55%); }
@@ -100,9 +100,9 @@ body {
   .status-contacted {
     --card: hsl(var(--status-contacted-background));
     --card-foreground: hsl(var(--status-contacted-foreground));
-    border-left-color: hsl(200, 70%, 60%) !important;
+    border-left-color: hsl(0, 0%, 60%) !important;
   }
-  .status-contacted .lucide { color: hsl(200, 70%, 50%); }
+  .status-contacted .lucide { color: hsl(0, 0%, 50%); }
 
   .status-responded {
     --card: hsl(var(--status-responded-background));
@@ -127,33 +127,33 @@ body {
 
 
   .dark {
-    --background: 224 71.4% 4.1%; 
-    --foreground: 210 20% 98%;
+    --background: 220 26% 14%; 
+    --foreground: 0 0% 100%;
 
-    --card: 224 71.4% 4.1%;
-    --card-foreground: 210 20% 98%;
+    --card: 220 26% 14%;
+    --card-foreground: 0 0% 100%;
 
-    --popover: 224 71.4% 4.1%;
-    --popover-foreground: 210 20% 98%;
+    --popover: 220 26% 14%;
+    --popover-foreground: 0 0% 100%;
 
-    --primary: 169 55% 64%; 
-    --primary-foreground: 224 71.4% 4.1%; 
+    --primary: 0 0% 0%; 
+    --primary-foreground: 0 0% 100%; 
 
-    --secondary: 215 27.9% 15%; 
-    --secondary-foreground: 210 20% 98%;
+    --secondary: 220 26% 18%; 
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 215 27.9% 15%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 220 26% 18%;
+    --muted-foreground: 220 14% 71%;
 
-    --accent: 253 100% 79%; 
-    --accent-foreground: 224 71.4% 4.1%;
+    --accent: 0 0% 0%; 
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 20% 98%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 215 20.2% 25%;
-    --input: 215 20.2% 25%;
-    --ring: 169 55% 64%;
+    --border: 220 26% 25%;
+    --input: 220 26% 25%;
+    --ring: 0 0% 0%;
     
     --chart-1: 169 55% 64%;
     --chart-2: 253 100% 79%;
@@ -161,14 +161,14 @@ body {
     --chart-4: 30 80% 60%;
     --chart-5: 120 40% 55%;
 
-    --sidebar-background: 224 71.4% 6%; /* Darker sidebar */
-    --sidebar-foreground: 210 20% 98%; /* Light text */
-    --sidebar-primary: 169 55% 64%; /* Teal */
-    --sidebar-primary-foreground: 224 71.4% 4.1%; /* Dark text on Teal */
-    --sidebar-accent: 215 27.9% 12%; /* Slightly lighter dark for hover */
-    --sidebar-accent-foreground: 210 20% 98%; /* Light text on hover */
-    --sidebar-border: 215 20.2% 20%; /* Dark border */
-    --sidebar-ring: 169 55% 64%; /* Teal for focus rings */
+    --sidebar-background: 220 26% 14%; /* Dark sidebar */
+    --sidebar-foreground: 0 0% 100%; /* White text */
+    --sidebar-primary: 0 0% 0%; /* Black */
+    --sidebar-primary-foreground: 0 0% 100%; /* White text on black */
+    --sidebar-accent: 220 26% 18%; /* Slightly lighter dark for hover */
+    --sidebar-accent-foreground: 0 0% 100%; /* White text on hover */
+    --sidebar-border: 220 26% 25%; /* Dark border */
+    --sidebar-ring: 0 0% 0%; /* Black for focus rings */
 
     /* Badge Contact Status Colors - Dark Theme */
     --status-none-background: hsl(220, 10%, 25%);

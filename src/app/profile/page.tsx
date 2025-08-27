@@ -6,7 +6,7 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { MainLayout } from '@/components/layout/main-layout';
+import { ModernLayout } from '@/components/layout/modern-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -78,16 +78,16 @@ function ProfilePageContent() {
 
   if (authLoading || !user) {
     return (
-      <MainLayout>
+      <ModernLayout>
         <div className="flex flex-1 justify-center items-center h-[calc(100vh-theme(spacing.16))]">
           <Loader2 className="h-16 w-16 animate-spin text-primary" />
         </div>
-      </MainLayout>
+      </ModernLayout>
     );
   }
 
   return (
-    <MainLayout>
+    <ModernLayout>
       <div className="space-y-8 max-w-6xl mx-auto">
         {/* Profile Header */}
         <div className="flex items-center gap-4">
@@ -171,7 +171,7 @@ function ProfilePageContent() {
           </Card>
         </div>
       </div>
-    </MainLayout>
+    </ModernLayout>
   );
 }
 

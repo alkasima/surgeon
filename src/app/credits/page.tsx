@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { MainLayout } from '@/components/layout/main-layout';
+import { ModernLayout } from '@/components/layout/modern-layout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -98,7 +98,7 @@ function CreditsPageContent() {
   };
 
   return (
-    <MainLayout>
+    <ModernLayout>
       <div className="max-w-6xl mx-auto space-y-8">
         {/* Header */}
         <div className="text-center space-y-4">
@@ -118,7 +118,7 @@ function CreditsPageContent() {
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-50 to-amber-50 rounded-xl border border-yellow-200">
             <Coins className="h-5 w-5 text-yellow-600" />
             <span className="font-semibold text-yellow-700">
-              Current Balance: {userData?.aiCredits || 0} credits
+              Current Balance: {userData?.credits || 0} credits
             </span>
           </div>
         </div>
@@ -247,15 +247,15 @@ function CreditsPageContent() {
           sessionId={sessionId}
         />
       </div>
-    </MainLayout>
+    </ModernLayout>
   );
 }
 
 export default function CreditsPage() {
   return (
     <Suspense fallback={
-      <MainLayout>
-        <div className="max-w-6xl mx-auto space-y-8 p-6">
+      <ModernLayout>
+        <div className="max-w-6xl mx-auto space-y-8">
           <div className="text-center space-y-4">
             <div className="flex items-center justify-center gap-3">
               <div className="p-3 rounded-xl bg-gradient-to-br from-yellow-500 to-amber-500 shadow-lg">
@@ -268,7 +268,7 @@ export default function CreditsPage() {
             <p className="text-lg text-muted-foreground">Loading...</p>
           </div>
         </div>
-      </MainLayout>
+      </ModernLayout>
     }>
       <CreditsPageContent />
     </Suspense>

@@ -47,11 +47,7 @@ export function AiToolsTab({ surgeon }: AiToolsTabProps) {
       return;
     }
 
-    // Check and use credits before proceeding
-    const hasCredits = await checkAndUseAICredits('summarizeNotes');
-    if (!hasCredits) {
-      return; // Error already shown by checkAndUseAICredits
-    }
+
 
     setIsSummarizing(true);
     setNotesSummary('');
@@ -60,7 +56,7 @@ export function AiToolsTab({ surgeon }: AiToolsTabProps) {
       setNotesSummary(result.summary);
       toast({
         title: "Notes Summarized",
-        description: `Generated a ${summaryLength} summary. Remaining credits: ${userData?.aiCredits || 0}`
+        description: `Generated a ${summaryLength} summary.`
       });
     } catch (error) {
       const appError = ErrorHandler.handleError(error, false);
@@ -101,7 +97,7 @@ export function AiToolsTab({ surgeon }: AiToolsTabProps) {
       setOutreachEmail(result.emailDraft);
       toast({
         title: "Email Drafted",
-        description: `An outreach email has been generated. Remaining credits: ${userData?.aiCredits || 0}`
+        description: "An outreach email has been generated."
       });
     } catch (error) {
       const appError = ErrorHandler.handleError(error, false);
@@ -159,7 +155,7 @@ export function AiToolsTab({ surgeon }: AiToolsTabProps) {
       setSurgeonAnalysis(result);
       toast({
         title: "Analysis Complete",
-        description: `Surgeon suitability analysis generated. Remaining credits: ${userData?.aiCredits || 0}`
+        description: "Surgeon suitability analysis generated."
       });
     } catch (error) {
       const appError = ErrorHandler.handleError(error, false);
@@ -184,21 +180,17 @@ export function AiToolsTab({ surgeon }: AiToolsTabProps) {
       <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
         <div className="flex items-center gap-2">
           <Coins className="h-5 w-5 text-yellow-600" />
-          <span className="font-medium">AI Credits: {userData?.aiCredits || 0}</span>
+          <span className="font-medium">Credits: {userData?.credits || 0}</span>
         </div>
         <div className="text-sm text-muted-foreground">
-          Costs: Summarize (1) • Email (2) • Analysis (3)
+          Costs: Email (2) • Analysis (3)
         </div>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center justify-between">
+          <CardTitle>
             Summarize Notes
-            <Badge variant="secondary" className="flex items-center gap-1">
-              <Coins className="h-3 w-3" />
-              1 credit
-            </Badge>
           </CardTitle>
           <CardDescription>
             Condense your notes for this surgeon into a short, medium, or long summary.
@@ -221,8 +213,7 @@ export function AiToolsTab({ surgeon }: AiToolsTabProps) {
             </div>
             <Button
               onClick={handleSummarizeNotes}
-              disabled={isSummarizing || !surgeon.notes || surgeon.notes.trim() === "" || !hasEnoughCredits('summarizeNotes')}
-              variant={hasEnoughCredits('summarizeNotes') ? "default" : "secondary"}
+              disabled={isSummarizing || !surgeon.notes || surgeon.notes.trim() === ""}
             >
               {isSummarizing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Summarize

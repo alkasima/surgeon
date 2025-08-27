@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
-import { addAICredits } from '@/app/user/actions';
+import { addAICredits } from '@/lib/user-api';
 import { headers } from 'next/headers';
 
 export async function POST(request: NextRequest) {

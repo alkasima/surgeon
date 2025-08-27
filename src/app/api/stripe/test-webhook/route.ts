@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { addAICredits } from '@/app/user/actions';
+import { addAICredits } from '@/lib/user-api';
 
 // Test endpoint to simulate webhook for development
 export async function POST(request: NextRequest) {

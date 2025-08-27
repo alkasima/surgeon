@@ -8,7 +8,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
-import { MainLayout } from '@/components/layout/main-layout';
+import { ModernLayout } from '@/components/layout/modern-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -386,8 +386,40 @@ function AddSurgeonFormContent() {
 
 
   return (
-    <MainLayout>
-      <div className="space-y-8">
+    <div className="space-y-0">
+      {/* Header */}
+      <div className="sticky top-0 z-10 border-b bg-background/80 backdrop-blur">
+        <div className="flex items-center gap-3 p-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.push('/')}
+            className="lg:hidden"
+          >
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </Button>
+          
+          <div className="flex-1">
+            <h1 className="text-xl font-semibold">Add New Surgeon</h1>
+            <p className="text-sm text-muted-foreground">Enter surgeon details or import from CSV</p>
+          </div>
+          
+          <Button
+            variant="outline"
+            onClick={() => router.push('/')}
+            className="gap-2"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to Dashboard
+          </Button>
+        </div>
+      </div>
+
+      <div className="p-6 space-y-8">
         <Card className="max-w-3xl mx-auto">
           <CardHeader>
             <CardTitle className="text-2xl font-headline">Add New Surgeon</CardTitle>
@@ -507,15 +539,15 @@ function AddSurgeonFormContent() {
         )}
 
       </div>
-    </MainLayout>
+    </div>
   );
 }
 
 export default function AddSurgeonPage() {
   return (
-    <SurgeonsProvider>
+    <ModernLayout>
       <AddSurgeonFormContent />
-    </SurgeonsProvider>
+    </ModernLayout>
   );
 }
 

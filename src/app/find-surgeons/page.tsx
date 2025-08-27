@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useMemo, type ChangeEvent } from 'react';
-import { MainLayout } from '@/components/layout/main-layout';
+import { ModernLayout } from '@/components/layout/modern-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,10 +11,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { SurgeonsProvider, useSurgeons } from '@/contexts/surgeons-context';
 import { useToast } from '@/hooks/use-toast';
 import type { NewSurgeonData } from '@/types/surgeon';
-import { Loader2, Search, Star, MessageCircle, ListFilter, ExternalLink, Bookmark } from 'lucide-react';
+import { Loader2, Search, Star, MessageCircle, ListFilter, ExternalLink, Bookmark, CreditCard } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
+import { useUser } from '@/contexts/user-context';
+// Server actions are called through the user context
 import { saveSearchQueryAction } from './actions';
 import { COUNTRIES } from '@/lib/constants'; // Import COUNTRIES
+import { InsufficientSearchCreditsDialog } from '@/components/credits/insufficient-search-credits-dialog';
 
 interface AddressComponent {
   long_name: string;
@@ -107,6 +110,7 @@ function parseAddressComponents(addressComponents?: AddressComponent[]): { city:
 function FindSurgeonsContent() {
   const { addSurgeon } = useSurgeons();
   const { user } = useAuth();
+  const { userData, refreshUserData, checkAndUseCredits } = useUser();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [locationTerm, setLocationTerm] = useState('');
@@ -118,6 +122,7 @@ function FindSurgeonsContent() {
   const [searchResults, setSearchResults] = useState<ApiSearchResult[]>([]);
   const [nextPageToken, setNextPageToken] = useState<string | null>(null);
   const [sortOption, setSortOption] = useState(API_SORT_OPTIONS[0].value);
+  const [showInsufficientCreditsDialog, setShowInsufficientCreditsDialog] = useState(false);
 
   const processApiResponse = (data: any): ApiSearchResult[] => {
     if (data.results) {
@@ -217,9 +222,27 @@ function FindSurgeonsContent() {
       return;
     }
 
+    if (!user?.uid) {
+      toast({ title: "Authentication Required", description: "Please log in to search for surgeons.", variant: "destructive" });
+      return;
+    }
+
+    // Check and use credits for search
+    const hasCredits = await checkAndUseCredits('surgeonSearch');
+    if (!hasCredits) {
+      // Error handling is done in the context
+      return;
+    }
+
     setIsSearching(true);
     try {
+
+      // Perform the search
       await fetchPlaces(null);
+      
+      // Refresh user data to show updated credits
+      await refreshUserData();
+      
     } catch (error) {
       console.error("An error occurred during the search process:", error);
       toast({ title: "Search Error", description: "An unexpected error occurred. Please try again.", variant: "destructive" });
@@ -228,9 +251,35 @@ function FindSurgeonsContent() {
     }
   };
 
-  const handleLoadMore = () => {
-    if (nextPageToken) {
-      fetchPlaces(nextPageToken);
+  const handleLoadMore = async () => {
+    if (!nextPageToken) return;
+    
+    if (!user?.uid) {
+      toast({ title: "Authentication Required", description: "Please log in to load more results.", variant: "destructive" });
+      return;
+    }
+
+    // Check and use credits for loading more
+    const hasCredits = await checkAndUseCredits('surgeonSearch');
+    if (!hasCredits) {
+      // Error handling is done in the context
+      return;
+    }
+
+    setIsFetchingMore(true);
+    try {
+
+      // Load more results
+      await fetchPlaces(nextPageToken);
+      
+      // Refresh user data to show updated credits
+      await refreshUserData();
+      
+    } catch (error) {
+      console.error("Error loading more results:", error);
+      toast({ title: "Load More Error", description: "Failed to load more results. Please try again.", variant: "destructive" });
+    } finally {
+      setIsFetchingMore(false);
     }
   };
 
@@ -325,13 +374,54 @@ function FindSurgeonsContent() {
   }, [searchResults, sortOption]);
 
   return (
-    <MainLayout>
-      <div className="space-y-8">
+    <div className="space-y-0">
+      {/* Header */}
+      <div className="sticky top-0 z-10 border-b bg-background/80 backdrop-blur">
+        <div className="flex items-center gap-3 p-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => window.history.back()}
+            className="lg:hidden"
+          >
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </Button>
+          
+          <div className="flex-1">
+            <h1 className="text-xl font-semibold">Find Surgeons</h1>
+            <p className="text-sm text-muted-foreground">Search Google Places for new surgeons to add</p>
+          </div>
+          
+          <div className="flex items-center gap-2 px-3 py-1 bg-muted rounded-lg">
+            <CreditCard className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium">
+              {userData?.credits || 0} credits
+            </span>
+          </div>
+          
+          <Button
+            variant="outline"
+            onClick={() => window.location.href = '/'}
+            className="gap-2"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to Dashboard
+          </Button>
+        </div>
+      </div>
+
+      <div className="p-6 space-y-8">
         <Card className="max-w-3xl mx-auto">
            <CardHeader>
               <CardTitle className="text-2xl font-headline">Find New Surgeons (via Google Places)</CardTitle>
               <CardDescription>
                 Search for surgeons by specialty/name and location. Results are provided by Google Places.
+                <br />
+                <span className="text-amber-600 font-medium">⚠️ Each search and "Load More" costs 5 search credits.</span>
               </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -478,15 +568,24 @@ function FindSurgeonsContent() {
                 </CardContent>
              </Card>
         )}
+        
+        {/* Insufficient Search Credits Dialog */}
+        <InsufficientSearchCreditsDialog
+          isOpen={showInsufficientCreditsDialog}
+          onClose={() => setShowInsufficientCreditsDialog(false)}
+          creditsNeeded={1}
+          featureName="Surgeon Search"
+          currentCredits={userData?.credits || 0}
+        />
       </div>
-    </MainLayout>
+    </div>
   );
 }
 
 export default function FindSurgeonsPage() {
   return (
-    <SurgeonsProvider>
+    <ModernLayout>
       <FindSurgeonsContent />
-    </SurgeonsProvider>
+    </ModernLayout>
   );
 }

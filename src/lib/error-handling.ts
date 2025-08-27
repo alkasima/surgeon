@@ -1,5 +1,12 @@
 import { toast } from '@/hooks/use-toast';
 
+// Global callback for insufficient credits dialog
+let insufficientCreditsCallback: ((featureType: string, currentCredits: number, creditsNeeded: number) => void) | null = null;
+
+export const setInsufficientCreditsCallback = (callback: typeof insufficientCreditsCallback) => {
+  insufficientCreditsCallback = callback;
+};
+
 export enum ErrorType {
   AUTHENTICATION = 'authentication',
   INSUFFICIENT_CREDITS = 'insufficient_credits',
@@ -151,6 +158,36 @@ export class ErrorHandler {
   }
 
   private static showErrorToast(error: AppError) {
+    // For insufficient credits, try to show dialog instead of toast
+    if (error.type === ErrorType.INSUFFICIENT_CREDITS && insufficientCreditsCallback) {
+      // Try to extract feature type and credits from error message
+      const message = error.message.toLowerCase();
+      let featureType = 'AI Feature';
+      let currentCredits = 0;
+      let creditsNeeded = 1;
+
+      // Extract current credits from message
+      const creditsMatch = error.message.match(/current balance: (\d+)/i);
+      if (creditsMatch) {
+        currentCredits = parseInt(creditsMatch[1], 10);
+      }
+
+      // Determine feature type and credits needed
+      if (message.includes('summariz') || message.includes('summary')) {
+        featureType = 'Note Summarization';
+        creditsNeeded = 1;
+      } else if (message.includes('email') || message.includes('draft')) {
+        featureType = 'Email Drafting';
+        creditsNeeded = 2;
+      } else if (message.includes('analyz') || message.includes('surgeon')) {
+        featureType = 'Surgeon Analysis';
+        creditsNeeded = 3;
+      }
+
+      insufficientCreditsCallback(featureType, currentCredits, creditsNeeded);
+      return;
+    }
+
     const variant = error.type === ErrorType.INSUFFICIENT_CREDITS ? 'default' : 'destructive';
     
     toast({

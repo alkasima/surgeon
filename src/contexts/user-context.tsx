@@ -2,9 +2,10 @@
 
 import type { ReactNode } from 'react';
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import type { UserData, AIFeatureType } from '@/types/user';
+import type { UserData, FeatureType, AIFeatureType } from '@/types/user';
+import { CREDIT_COSTS } from '@/types/user';
 import { useAuth } from './auth-context';
-import { getUserData, checkAICredits, decrementAICredits } from '@/app/user/actions';
+import { getUserData, checkCredits, useCredits, upgradeUserCredits, checkAICredits, decrementAICredits } from '@/lib/user-api';
 import { useToast } from '@/hooks/use-toast';
 import { ErrorHandler, ErrorType } from '@/lib/error-handling';
 
@@ -13,7 +14,8 @@ interface UserContextType {
   isLoading: boolean;
   refreshUserData: () => Promise<void>;
   checkAndUseAICredits: (featureType: AIFeatureType) => Promise<boolean>;
-  hasEnoughCredits: (featureType: AIFeatureType) => boolean;
+  checkAndUseCredits: (featureType: FeatureType) => Promise<boolean>;
+  hasEnoughCredits: (featureType: FeatureType) => boolean;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -41,8 +43,33 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           result.error
         );
         ErrorHandler.handleError(appError);
+      } else if (result.data) {
+        // Check if user needs credit upgrade/migration (one-time migration)
+        const currentCredits = result.data.credits || 0;
+        const currentAICredits = result.data.aiCredits || 0;
+        const currentSearchCredits = result.data.searchCredits || 0;
+        
+        if (currentCredits === 0 || (currentCredits < 50 && (currentAICredits > 0 || currentSearchCredits > 0))) {
+          console.log('User needs credit migration/upgrade...');
+          try {
+            const upgradeResult = await upgradeUserCredits(user.uid);
+            if (upgradeResult.success && upgradeResult.upgraded) {
+              console.log('User credits upgraded successfully');
+              // Fetch updated data
+              const updatedResult = await getUserData(user.uid);
+              if (updatedResult.data) {
+                setUserData(updatedResult.data);
+                return;
+              }
+            }
+          } catch (upgradeError) {
+            console.error('Error upgrading user credits:', upgradeError);
+          }
+        }
+        
+        setUserData(result.data);
       } else {
-        setUserData(result.data || null);
+        setUserData(null);
       }
     } catch (error) {
       console.error('Error in refreshUserData:', error);
@@ -51,11 +78,11 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const checkAndUseAICredits = async (featureType: AIFeatureType): Promise<boolean> => {
+  const checkAndUseCredits = async (featureType: FeatureType): Promise<boolean> => {
     if (!user) {
       const authError = ErrorHandler.createError(
         ErrorType.AUTHENTICATION,
-        "Please log in to use AI features"
+        "Please log in to use this feature"
       );
       ErrorHandler.handleError(authError);
       return false;
@@ -63,7 +90,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
 
     try {
       // Check if user has enough credits
-      const creditCheck = await checkAICredits(user.uid, featureType);
+      const creditCheck = await checkCredits(user.uid, featureType);
       if (creditCheck.error) {
         const error = ErrorHandler.createError(
           ErrorType.NETWORK,
@@ -77,7 +104,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       if (!creditCheck.hasCredits) {
         const creditError = ErrorHandler.createError(
           ErrorType.INSUFFICIENT_CREDITS,
-          `You need more AI credits to use this feature. Current balance: ${creditCheck.currentCredits || 0}`,
+          `You need more credits to use this feature. Current balance: ${creditCheck.currentCredits || 0}`,
           undefined,
           undefined,
           false
@@ -87,7 +114,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       }
 
       // Deduct credits
-      const deductResult = await decrementAICredits(user.uid, featureType);
+      const deductResult = await useCredits(user.uid, featureType);
       if (deductResult.error) {
         const error = ErrorHandler.createError(
           ErrorType.NETWORK,
@@ -102,7 +129,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       if (userData) {
         setUserData({
           ...userData,
-          aiCredits: deductResult.remainingCredits || 0
+          credits: deductResult.remainingCredits || 0
         });
       }
 
@@ -113,14 +140,14 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const hasEnoughCredits = (featureType: AIFeatureType): boolean => {
+  const checkAndUseAICredits = async (featureType: AIFeatureType): Promise<boolean> => {
+    return checkAndUseCredits(featureType);
+  };
+
+  const hasEnoughCredits = (featureType: FeatureType): boolean => {
     if (!userData) return false;
-    const requiredCredits = {
-      summarizeNotes: 1,
-      draftEmail: 2,
-      analyzeSurgeon: 3
-    }[featureType];
-    return (userData.aiCredits || 0) >= requiredCredits;
+    const requiredCredits = CREDIT_COSTS[featureType];
+    return (userData.credits || 0) >= requiredCredits;
   };
 
   // Load user data when user changes
@@ -134,6 +161,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       isLoading,
       refreshUserData,
       checkAndUseAICredits,
+      checkAndUseCredits,
       hasEnoughCredits
     }}>
       {children}
