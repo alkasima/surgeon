@@ -6,18 +6,19 @@ import type { UserData } from '@/types/user';
 export async function POST(request: NextRequest) {
     try {
         const { uid } = await request.json();
-        
+
         if (!uid) {
             return NextResponse.json({ error: 'UID is required' }, { status: 400 });
         }
 
+        
         if (!adminDb) {
             return NextResponse.json({ error: 'Firestore Admin not initialized' }, { status: 500 });
         }
 
         const userDocRef = adminDb.collection('users').doc(uid);
         const docSnap = await userDocRef.get();
-        
+
         if (docSnap.exists) {
             const data = docSnap.data() as UserData;
 
@@ -46,7 +47,7 @@ export async function POST(request: NextRequest) {
                     lastUsageDate: data.usageStats.lastUsageDate ? new Date(data.usageStats.lastUsageDate.toDate()) : undefined
                 } : undefined
             };
-            
+
             return NextResponse.json({ data: serializedData });
         } else {
             // Initialize user if doesn't exist
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
                     monthlyUsage: {},
                 },
             });
-            
+
             return NextResponse.json({
                 data: {
                     credits: 100,
