@@ -11,15 +11,16 @@ import { AI_CREDIT_COSTS } from '@/types/user';
  * Checks if the document exists first to avoid overwriting.
  */
 export async function initializeUserData(uid: string): Promise<{ success: boolean; error?: string }> {
-    if (!db) return { success: false, error: "Firestore not initialized." };
+    if (!adminDb) return { success: false, error: "Firestore not initialized." };
     try {
-        const userDocRef = doc(db, 'users', uid);
-        const userDoc = await getDoc(userDocRef);
-        if (!userDoc.exists()) {
-            await setDoc(userDocRef, {
-                searchCredits: 5,
-                aiCredits: 5, // Give 5 free AI credits on signup
-                createdAt: serverTimestamp(),
+        const userDocRef = adminDb.collection('users').doc(uid);
+        const userDoc = await userDocRef.get();
+        if (!userDoc.exists) {
+            await userDocRef.set({
+                credits: 10, // Unified credit system - 10 free credits on signup
+                searchCredits: 5, // Legacy field
+                aiCredits: 5, // Legacy field
+                createdAt: Timestamp.now(),
                 totalCreditsUsed: 0,
                 totalCreditsPurchased: 0,
                 usageStats: {
@@ -43,16 +44,32 @@ export async function initializeUserData(uid: string): Promise<{ success: boolea
  * If the document doesn't exist, it initializes it.
  */
 export async function getUserData(uid: string): Promise<{ data?: UserData; error?: string }> {
-    if (!db) return { error: "Firestore not initialized." };
+    if (!adminDb) return { error: "Firestore not initialized." };
     try {
-        const userDocRef = doc(db, 'users', uid);
-        const docSnap = await getDoc(userDocRef);
-        if (docSnap.exists()) {
-            return { data: docSnap.data() as UserData };
+        const userDocRef = adminDb.collection('users').doc(uid);
+        const docSnap = await userDocRef.get();
+        if (docSnap.exists) {
+            const userData = docSnap.data() as UserData;
+            
+            // Serialize Timestamp objects to avoid serialization issues
+            const serializedData: UserData = {
+                ...userData,
+                createdAt: userData.createdAt ? (userData.createdAt as any).toDate?.() || userData.createdAt : undefined,
+                lastCreditPurchase: userData.lastCreditPurchase ? (userData.lastCreditPurchase as any).toDate?.() || userData.lastCreditPurchase : undefined,
+                usageStats: userData.usageStats ? {
+                    ...userData.usageStats,
+                    lastUsageDate: userData.usageStats.lastUsageDate ? 
+                        (userData.usageStats.lastUsageDate as any).toDate?.() || userData.usageStats.lastUsageDate : 
+                        undefined
+                } : undefined
+            };
+            
+            return { data: serializedData };
         } else {
             // Fallback for existing users who don't have a user document yet.
             await initializeUserData(uid);
             return { data: { 
+                credits: 5,
                 searchCredits: 5, 
                 aiCredits: 5, 
                 totalCreditsUsed: 0,
@@ -63,6 +80,8 @@ export async function getUserData(uid: string): Promise<{ data?: UserData; error
                     analyzeSurgeonCount: 0,
                     dailyUsage: {},
                     monthlyUsage: {},
+                    lastUsageDate: undefined,
+                    lastUsedFeature: undefined
                 }
             } };
         }
@@ -76,11 +95,11 @@ export async function getUserData(uid: string): Promise<{ data?: UserData; error
  * Decrements the user's search credits by a specified amount (default 5 for surgeon searches).
  */
 export async function decrementSearchCredits(uid: string, amount: number = 5): Promise<{ success: boolean; error?: string }> {
-     if (!db) return { success: false, error: "Firestore not initialized." };
+     if (!adminDb) return { success: false, error: "Firestore not initialized." };
     try {
-        const userDocRef = doc(db, 'users', uid);
-        await updateDoc(userDocRef, {
-            searchCredits: increment(-amount)
+        const userDocRef = adminDb.collection('users').doc(uid);
+        await userDocRef.update({
+            searchCredits: FieldValue.increment(-amount)
         });
         return { success: true };
     } catch (e) {
@@ -93,12 +112,12 @@ export async function decrementSearchCredits(uid: string, amount: number = 5): P
  * Checks if user has enough AI credits for a specific feature.
  */
 export async function checkAICredits(uid: string, featureType: AIFeatureType): Promise<{ hasCredits: boolean; currentCredits?: number; error?: string }> {
-    if (!db) return { hasCredits: false, error: "Firestore not initialized." };
+    if (!adminDb) return { hasCredits: false, error: "Firestore not initialized." };
     try {
-        const userDocRef = doc(db, 'users', uid);
-        const docSnap = await getDoc(userDocRef);
+        const userDocRef = adminDb.collection('users').doc(uid);
+        const docSnap = await userDocRef.get();
 
-        if (!docSnap.exists()) {
+        if (!docSnap.exists) {
             return { hasCredits: false, error: "User data not found." };
         }
 
@@ -120,9 +139,9 @@ export async function checkAICredits(uid: string, featureType: AIFeatureType): P
  * Decrements the user's AI credits for a specific feature.
  */
 export async function decrementAICredits(uid: string, featureType: AIFeatureType): Promise<{ success: boolean; remainingCredits?: number; error?: string }> {
-    if (!db) return { success: false, error: "Firestore not initialized." };
+    if (!adminDb) return { success: false, error: "Firestore not initialized." };
     try {
-        const userDocRef = doc(db, 'users', uid);
+        const userDocRef = adminDb.collection('users').doc(uid);
         const requiredCredits = AI_CREDIT_COSTS[featureType];
 
         // First check if user has enough credits
@@ -138,23 +157,23 @@ export async function decrementAICredits(uid: string, featureType: AIFeatureType
 
         // Prepare usage tracking updates
         const usageUpdates: any = {
-            aiCredits: increment(-requiredCredits),
-            totalCreditsUsed: increment(requiredCredits),
+            aiCredits: FieldValue.increment(-requiredCredits),
+            totalCreditsUsed: FieldValue.increment(requiredCredits),
             'usageStats.lastUsedFeature': featureType,
-            'usageStats.lastUsageDate': serverTimestamp(),
+            'usageStats.lastUsageDate': Timestamp.now(),
         };
 
         // Update feature-specific counters
-        usageUpdates[`usageStats.${featureType}Count`] = increment(1);
-        usageUpdates[`usageStats.dailyUsage.${dateKey}`] = increment(1);
-        usageUpdates[`usageStats.monthlyUsage.${monthKey}`] = increment(1);
+        usageUpdates[`usageStats.${featureType}Count`] = FieldValue.increment(1);
+        usageUpdates[`usageStats.dailyUsage.${dateKey}`] = FieldValue.increment(1);
+        usageUpdates[`usageStats.monthlyUsage.${monthKey}`] = FieldValue.increment(1);
 
         // Decrement credits and track usage
-        await updateDoc(userDocRef, usageUpdates);
+        await userDocRef.update(usageUpdates);
 
         // Get updated credit count
-        const updatedDoc = await getDoc(userDocRef);
-        const remainingCredits = updatedDoc.exists() ? (updatedDoc.data() as UserData).aiCredits : 0;
+        const updatedDoc = await userDocRef.get();
+        const remainingCredits = updatedDoc.exists ? (updatedDoc.data() as UserData).aiCredits : 0;
 
         return { success: true, remainingCredits };
     } catch (e) {
@@ -167,18 +186,18 @@ export async function decrementAICredits(uid: string, featureType: AIFeatureType
  * Adds AI credits to user account (for purchases).
  */
 export async function addAICredits(uid: string, creditsToAdd: number): Promise<{ success: boolean; newTotal?: number; error?: string }> {
-    if (!db) return { success: false, error: "Firestore not initialized." };
+    if (!adminDb) return { success: false, error: "Firestore not initialized." };
     try {
-        const userDocRef = doc(db, 'users', uid);
-        await updateDoc(userDocRef, {
-            aiCredits: increment(creditsToAdd),
-            totalCreditsPurchased: increment(creditsToAdd),
-            lastCreditPurchase: serverTimestamp()
+        const userDocRef = adminDb.collection('users').doc(uid);
+        await userDocRef.update({
+            aiCredits: FieldValue.increment(creditsToAdd),
+            totalCreditsPurchased: FieldValue.increment(creditsToAdd),
+            lastCreditPurchase: Timestamp.now()
         });
 
         // Get updated credit count
-        const updatedDoc = await getDoc(userDocRef);
-        const newTotal = updatedDoc.exists() ? (updatedDoc.data() as UserData).aiCredits : 0;
+        const updatedDoc = await userDocRef.get();
+        const newTotal = updatedDoc.exists ? (updatedDoc.data() as UserData).aiCredits : 0;
 
         return { success: true, newTotal };
     } catch (e) {
@@ -191,18 +210,18 @@ export async function addAICredits(uid: string, creditsToAdd: number): Promise<{
  * Adds search credits to user account (for purchases).
  */
 export async function addSearchCredits(uid: string, creditsToAdd: number): Promise<{ success: boolean; newTotal?: number; error?: string }> {
-    if (!db) return { success: false, error: "Firestore not initialized." };
+    if (!adminDb) return { success: false, error: "Firestore not initialized." };
     try {
-        const userDocRef = doc(db, 'users', uid);
-        await updateDoc(userDocRef, {
-            searchCredits: increment(creditsToAdd),
-            totalCreditsPurchased: increment(creditsToAdd),
-            lastCreditPurchase: serverTimestamp()
+        const userDocRef = adminDb.collection('users').doc(uid);
+        await userDocRef.update({
+            searchCredits: FieldValue.increment(creditsToAdd),
+            totalCreditsPurchased: FieldValue.increment(creditsToAdd),
+            lastCreditPurchase: Timestamp.now()
         });
 
         // Get updated credit count
-        const updatedDoc = await getDoc(userDocRef);
-        const newTotal = updatedDoc.exists() ? (updatedDoc.data() as UserData).searchCredits : 0;
+        const updatedDoc = await userDocRef.get();
+        const newTotal = updatedDoc.exists ? (updatedDoc.data() as UserData).searchCredits : 0;
 
         return { success: true, newTotal };
     } catch (e) {
@@ -215,15 +234,15 @@ export async function addSearchCredits(uid: string, creditsToAdd: number): Promi
  * Gets usage analytics for a user.
  */
 export async function getUserAnalytics(uid: string): Promise<{ analytics?: UsageStats; error?: string }> {
-    if (!db) return { error: "Firestore not initialized." };
+    if (!adminDb) return { error: "Firestore not initialized." };
     try {
         console.log('getUserAnalytics: Starting for uid:', uid);
-        const userDocRef = doc(db, 'users', uid);
+        const userDocRef = adminDb.collection('users').doc(uid);
         console.log('getUserAnalytics: Created doc reference');
-        const docSnap = await getDoc(userDocRef);
-        console.log('getUserAnalytics: Got document snapshot, exists:', docSnap.exists());
+        const docSnap = await userDocRef.get();
+        console.log('getUserAnalytics: Got document snapshot, exists:', docSnap.exists);
 
-        if (!docSnap.exists()) {
+        if (!docSnap.exists) {
             // Initialize user document if it doesn't exist
             console.log("User document doesn't exist, initializing...");
             const initResult = await initializeUserData(uid);
@@ -239,13 +258,24 @@ export async function getUserAnalytics(uid: string): Promise<{ analytics?: Usage
                     analyzeSurgeonCount: 0,
                     dailyUsage: {},
                     monthlyUsage: {},
+                    lastUsageDate: null,
+                    lastUsedFeature: null
                 }
             };
         }
 
         const userData = docSnap.data() as UserData;
         console.log('getUserAnalytics: Got user data, usageStats:', userData.usageStats);
-        return { analytics: userData.usageStats };
+        
+        // Serialize the analytics data to avoid Timestamp serialization issues
+        const analytics = userData.usageStats ? {
+            ...userData.usageStats,
+            lastUsageDate: userData.usageStats.lastUsageDate ? 
+                (userData.usageStats.lastUsageDate as any).toDate?.() || userData.usageStats.lastUsageDate : 
+                null
+        } : null;
+        
+        return { analytics };
     } catch (e) {
         console.error("Error getting user analytics - detailed:", {
             error: e,

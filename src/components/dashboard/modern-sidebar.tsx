@@ -31,7 +31,7 @@ interface SidebarProps {
 
 export function ModernSidebar({ collapsed, onToggle, isMobile = false }: SidebarProps) {
   const pathname = usePathname();
-  const { user, signOut } = useAuth();
+  const { user, logOut } = useAuth();
   const { userData } = useUser();
 
   return (
@@ -151,7 +151,7 @@ export function ModernSidebar({ collapsed, onToggle, isMobile = false }: Sidebar
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => signOut()} className="text-red-600">
+                    <DropdownMenuItem onClick={() => logOut()} className="text-red-600">
                       <LogOut className="h-4 w-4 mr-2" />
                       Sign Out
                     </DropdownMenuItem>
@@ -207,7 +207,7 @@ export function ModernSidebar({ collapsed, onToggle, isMobile = false }: Sidebar
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => signOut()} className="text-red-600">
+                <DropdownMenuItem onClick={() => logOut()} className="text-red-600">
                   <LogOut className="h-4 w-4 mr-2" />
                   Sign Out
                 </DropdownMenuItem>

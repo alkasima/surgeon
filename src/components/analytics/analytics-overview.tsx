@@ -44,7 +44,7 @@ export function AnalyticsOverview({ userData, analytics }: AnalyticsOverviewProp
           <CreditCard className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{userData?.aiCredits || 0}</div>
+          <div className="text-2xl font-bold">{userData?.credits || 0}</div>
           <p className="text-xs text-muted-foreground">
             {userData?.totalCreditsUsed || 0} used total
           </p>

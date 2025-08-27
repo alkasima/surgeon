@@ -14,6 +14,7 @@ import { AnalyticsOverview } from '@/components/analytics/analytics-overview';
 import { UsageCharts } from '@/components/analytics/usage-charts';
 import { FeatureBreakdown } from '@/components/analytics/feature-breakdown';
 import { CreditHistory } from '@/components/analytics/credit-history';
+import { CreditAnalytics } from '@/components/analytics/credit-analytics';
 import { formatDate } from '@/lib/date-utils';
 import type { UsageStats } from '@/types/user';
 import { BarChart3, TrendingUp, PieChart, CreditCard } from 'lucide-react';
@@ -253,8 +254,12 @@ function AnalyticsContent() {
           analytics={analytics} 
         />
 
-        <Tabs defaultValue="usage" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+        <Tabs defaultValue="credits" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="credits" className="flex items-center gap-2">
+              <CreditCard className="h-4 w-4" />
+              Credit Analytics
+            </TabsTrigger>
             <TabsTrigger value="usage" className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
               Usage Trends
@@ -263,7 +268,7 @@ function AnalyticsContent() {
               <PieChart className="h-4 w-4" />
               Feature Breakdown
             </TabsTrigger>
-            <TabsTrigger value="credits" className="flex items-center gap-2">
+            <TabsTrigger value="history" className="flex items-center gap-2">
               <CreditCard className="h-4 w-4" />
               Credit History
             </TabsTrigger>
@@ -273,6 +278,10 @@ function AnalyticsContent() {
             </TabsTrigger>
           </TabsList>
 
+          <TabsContent value="credits" className="space-y-6">
+            <CreditAnalytics userData={userData} analytics={analytics} />
+          </TabsContent>
+
           <TabsContent value="usage" className="space-y-6">
             <UsageCharts analytics={analytics} />
           </TabsContent>
@@ -281,7 +290,7 @@ function AnalyticsContent() {
             <FeatureBreakdown analytics={analytics} />
           </TabsContent>
 
-          <TabsContent value="credits" className="space-y-6">
+          <TabsContent value="history" className="space-y-6">
             <CreditHistory userData={userData} />
           </TabsContent>
 
