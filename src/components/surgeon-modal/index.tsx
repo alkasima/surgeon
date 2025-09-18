@@ -7,6 +7,7 @@ import { useSurgeons } from "@/contexts/surgeons-context";
 import { DetailsTrackingTab } from "./details-tracking-tab";
 import { ContactLinksTab } from "./contact-links-tab";
 import { AiToolsTab } from "./ai-tools-tab";
+import { RedditSentimentCard } from "@/components/reddit-sentiment";
 import { Button } from "../ui/button";
 import { Trash2 } from "lucide-react";
 import {
@@ -71,10 +72,11 @@ export function SurgeonModal() {
         
         <div className="flex-grow overflow-y-auto px-6 pb-6">
           <Tabs defaultValue="details" className="w-full mt-4">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="details">Details & Tracking</TabsTrigger>
               <TabsTrigger value="contact">Contact & Links</TabsTrigger>
               <TabsTrigger value="ai">AI Tools</TabsTrigger>
+              <TabsTrigger value="reddit">Reddit Sentiment</TabsTrigger>
             </TabsList>
             <TabsContent value="details" className="mt-4">
               <DetailsTrackingTab surgeon={selectedSurgeon} />
@@ -84,6 +86,9 @@ export function SurgeonModal() {
             </TabsContent>
             <TabsContent value="ai" className="mt-4">
               <AiToolsTab surgeon={selectedSurgeon} />
+            </TabsContent>
+            <TabsContent value="reddit" className="mt-4">
+              <RedditSentimentCard surgeonName={selectedSurgeon.name} />
             </TabsContent>
           </Tabs>
         </div>

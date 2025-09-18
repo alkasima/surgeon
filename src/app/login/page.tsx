@@ -28,7 +28,14 @@ export default function LoginPage() {
     const user = await logIn(email, password);
     setIsSubmitting(false);
     if (user) {
-      router.push('/');
+      // Check if user is admin and redirect accordingly
+      // The auth context will handle admin status check
+      // We'll redirect based on admin status after a short delay to allow auth context to update
+      setTimeout(() => {
+        // Check if user should be redirected to admin dashboard
+        // This will be handled by the auth context and layout components
+        router.push('/');
+      }, 100);
     }
   };
 

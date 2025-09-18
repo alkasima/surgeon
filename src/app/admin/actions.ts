@@ -4,6 +4,7 @@
 
 import admin from 'firebase-admin';
 import type { UserRecord } from 'firebase-admin/auth';
+import { FieldValue } from 'firebase-admin/firestore';
 
 // IMPORTANT: Firebase Admin SDK Setup
 //
@@ -141,5 +142,77 @@ export async function createFirebaseUser(email: string, password: string): Promi
       return { error: 'The email address is already in use by another account.' };
     }
     return { error: error.message || `Failed to create user ${email}.` };
+  }
+}
+
+export async function updateUserPassword(uid: string, newPassword: string): Promise<{ success?: boolean; error?: string }> {
+  const adminAuth = initializeFirebaseAdminApp();
+  if (!adminAuth) {
+    return { error: "Firebase Admin SDK not initialized. Cannot update password." };
+  }
+
+  if (!newPassword || newPassword.length < 6) {
+    return { error: "Password must be at least 6 characters long." };
+  }
+
+  try {
+    await adminAuth.updateUser(uid, { password: newPassword });
+    return { success: true };
+  } catch (error: any) {
+    console.error(`Error updating password for user ${uid}:`, error);
+    return { error: error.message || `Failed to update password for user ${uid}.` };
+  }
+}
+
+export async function addCreditsToUser(uid: string, creditsToAdd: number): Promise<{ success?: boolean; newTotal?: number; error?: string }> {
+  try {
+    // Import Firebase Admin SDK
+    const { adminDb } = await import('@/lib/firebase-admin');
+    
+    if (!adminDb) {
+      return { error: 'Firebase Admin not initialized' };
+    }
+
+    const userDocRef = adminDb.collection('users').doc(uid);
+    
+    // Add credits using Firebase Admin SDK
+    await userDocRef.update({
+      credits: FieldValue.increment(creditsToAdd),
+      totalCreditsPurchased: FieldValue.increment(creditsToAdd),
+      lastCreditPurchase: FieldValue.serverTimestamp()
+    });
+
+    // Get updated credit count
+    const updatedDoc = await userDocRef.get();
+    const newTotal = updatedDoc.exists ? (updatedDoc.data()?.credits || 0) : 0;
+
+    return { success: true, newTotal };
+  } catch (error: any) {
+    console.error(`Error adding credits to user ${uid}:`, error);
+    return { error: error.message || `Failed to add credits to user ${uid}.` };
+  }
+}
+
+export async function getUserCredits(uid: string): Promise<{ credits?: number; error?: string }> {
+  try {
+    // Import Firebase Admin SDK
+    const { adminDb } = await import('@/lib/firebase-admin');
+    
+    if (!adminDb) {
+      return { error: 'Firebase Admin not initialized' };
+    }
+
+    const userDocRef = adminDb.collection('users').doc(uid);
+    const docSnap = await userDocRef.get();
+    
+    if (!docSnap.exists) {
+      return { credits: 0 }; // User doesn't exist, return 0 credits
+    }
+
+    const userData = docSnap.data();
+    return { credits: userData?.credits || 0 };
+  } catch (error: any) {
+    console.error(`Error getting credits for user ${uid}:`, error);
+    return { error: error.message || `Failed to get credits for user ${uid}.` };
   }
 }

@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { UserProvider } from '@/contexts/user-context';
 import { SurgeonsProvider } from '@/contexts/surgeons-context';
 import ModernDashboard from '@/components/dashboard/modern-dashboard';
+import { AdminRedirect } from '@/components/admin-redirect';
 import { Loader2 } from 'lucide-react';
 
 function ProtectedDashboard() {
@@ -27,7 +28,12 @@ function ProtectedDashboard() {
     );
   }
 
-  return <ModernDashboard />;
+  return (
+    <>
+      <AdminRedirect />
+      <ModernDashboard />
+    </>
+  );
 }
 
 export default function Dashboard() {

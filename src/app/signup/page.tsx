@@ -31,7 +31,30 @@ export default function SignUpPage() {
     const user = await signUp(email, password);
     setIsSubmitting(false);
     if (user) {
-      router.push('/');
+      // Check if user should be assigned admin role
+      try {
+        const response = await fetch('/api/admin/assign-role', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ uid: user.uid, email: email }),
+        });
+
+        const result = await response.json();
+        
+        if (result.isAdmin) {
+          // Redirect to admin dashboard if user is admin
+          router.push('/admin/users');
+        } else {
+          // Redirect to regular dashboard
+          router.push('/');
+        }
+      } catch (error) {
+        console.error('Error checking admin role:', error);
+        // Default to regular dashboard if there's an error
+        router.push('/');
+      }
     }
   };
 

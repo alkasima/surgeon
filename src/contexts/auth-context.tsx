@@ -37,14 +37,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
-        // // Check for admin status
-        // const adminDocRef = doc(db, 'admins', currentUser.uid);
-        // const adminDocSnap = await getDoc(adminDocRef);
-        // if (adminDocSnap.exists()) {
-        //   setIsAdmin(true);
-        // } else {
-        //   setIsAdmin(false);
-        // }
+        // Check for admin status
+        const adminDocRef = doc(db, 'admins', currentUser.uid);
+        const adminDocSnap = await getDoc(adminDocRef);
+        if (adminDocSnap.exists()) {
+          setIsAdmin(true);
+        } else {
+          setIsAdmin(false);
+        }
       } else {
         setIsAdmin(false);
       }

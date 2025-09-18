@@ -8,10 +8,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { SurgeonsProvider, useSurgeons } from '@/contexts/surgeons-context';
 import { useToast } from '@/hooks/use-toast';
 import type { NewSurgeonData } from '@/types/surgeon';
-import { Loader2, Search, Star, MessageCircle, ListFilter, ExternalLink, Bookmark, CreditCard } from 'lucide-react';
+import { Loader2, Search, Star, MessageCircle, ListFilter, ExternalLink, Bookmark, CreditCard, Plus, Users, AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
 import { useUser } from '@/contexts/user-context';
 // Server actions are called through the user context
@@ -52,8 +63,12 @@ interface ApiSearchResult {
 
 const API_SORT_OPTIONS = [
   { value: 'default', label: "Default (Prominence)" },
-  { value: 'reviews_high_low', label: "Reviews: High to Low" },
-  { value: 'rating_high_low', label: "Rating: High to Low" },
+  { value: 'reviews_high_low', label: "⭐ Most Reviews" },
+  { value: 'reviews_low_high', label: "⭐ Least Reviews" },
+  { value: 'rating_high_low', label: "🌟 Highest Rating" },
+  { value: 'rating_low_high', label: "🌟 Lowest Rating" },
+  { value: 'name_asc', label: "📝 Name A-Z" },
+  { value: 'name_desc', label: "📝 Name Z-A" },
 ];
 
 const SPECIALTY_OPTIONS = ["Hair Transplant", "Scalp Micropigmentation", "ARTAS"];
@@ -119,6 +134,7 @@ function FindSurgeonsContent() {
   const [isSearching, setIsSearching] = useState(false);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
   const [isSavingSearch, setIsSavingSearch] = useState(false);
+  const [isAddingAll, setIsAddingAll] = useState(false);
   const [searchResults, setSearchResults] = useState<ApiSearchResult[]>([]);
   const [nextPageToken, setNextPageToken] = useState<string | null>(null);
   const [sortOption, setSortOption] = useState(API_SORT_OPTIONS[0].value);
@@ -345,6 +361,72 @@ function FindSurgeonsContent() {
       });
     }
   };
+
+  const handleAddAllSurgeons = async () => {
+    if (sortedAndFilteredSearchResults.length === 0) {
+      toast({
+        title: "No Results",
+        description: "No surgeons to add. Please search first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsAddingAll(true);
+    let addedCount = 0;
+    let duplicateCount = 0;
+    let errorCount = 0;
+
+    try {
+      for (const result of sortedAndFilteredSearchResults) {
+        const newSurgeon: NewSurgeonData = {
+          name: result.name,
+          clinicName: result.clinicName || result.name,
+          location: {
+            city: result.city || 'Unknown City',
+            country: result.country || 'Unknown Country',
+            state: result.state,
+          },
+          contactInfo: {
+            phone: result.phone,
+            website: result.website,
+          },
+          reviewRating: result.rating?.toString(),
+          reviewCount: result.user_ratings_total?.toString(),
+          reviewSource: "Google Places",
+        };
+
+        const wasAdded = await addSurgeon(newSurgeon);
+        if (wasAdded) {
+          addedCount++;
+        } else {
+          duplicateCount++;
+        }
+      }
+
+      // Show summary toast
+      if (addedCount > 0) {
+        toast({
+          title: "Bulk Add Complete",
+          description: `Successfully added ${addedCount} surgeons. ${duplicateCount} were already in your list.`,
+        });
+      } else if (duplicateCount > 0) {
+        toast({
+          title: "All Surgeons Already Added",
+          description: `All ${duplicateCount} surgeons were already in your list.`,
+        });
+      }
+    } catch (error) {
+      console.error("Error adding surgeons:", error);
+      toast({
+        title: "Error Adding Surgeons",
+        description: `Added ${addedCount} surgeons, but encountered errors with ${errorCount} surgeons.`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsAddingAll(false);
+    }
+  };
   
   const handleSpecialtyClick = (specialty: string) => {
     if (selectedSpecialty === specialty) {
@@ -365,11 +447,32 @@ function FindSurgeonsContent() {
 
   const sortedAndFilteredSearchResults = useMemo(() => {
     let sorted = [...searchResults];
-    if (sortOption === 'reviews_high_low') {
-      sorted.sort((a, b) => (b.user_ratings_total || 0) - (a.user_ratings_total || 0));
-    } else if (sortOption === 'rating_high_low') {
-      sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    
+    switch (sortOption) {
+      case 'reviews_high_low':
+        sorted.sort((a, b) => (b.user_ratings_total || 0) - (a.user_ratings_total || 0));
+        break;
+      case 'reviews_low_high':
+        sorted.sort((a, b) => (a.user_ratings_total || 0) - (b.user_ratings_total || 0));
+        break;
+      case 'rating_high_low':
+        sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        break;
+      case 'rating_low_high':
+        sorted.sort((a, b) => (a.rating || 0) - (b.rating || 0));
+        break;
+      case 'name_asc':
+        sorted.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case 'name_desc':
+        sorted.sort((a, b) => b.name.localeCompare(a.name));
+        break;
+      case 'default':
+      default:
+        // Keep original order (Google's prominence ranking)
+        break;
     }
+    
     return sorted;
   }, [searchResults, sortOption]);
 
@@ -483,7 +586,7 @@ function FindSurgeonsContent() {
                    <> <Bookmark className="mr-2 h-4 w-4" /> Save This Search </>
                 )}
               </Button>
-              <Select value={sortOption} onValueChange={setSortOption} disabled={isSearching || isFetchingMore || searchResults.length === 0 || isSavingSearch}>
+              <Select value={sortOption} onValueChange={setSortOption} disabled={isSearching || isFetchingMore || searchResults.length === 0 || isSavingSearch || isAddingAll}>
                 <SelectTrigger className="w-full sm:w-auto sm:min-w-[200px]">
                   <ListFilter className="mr-2 h-4 w-4" />
                   <SelectValue placeholder="Sort by..." />
@@ -508,7 +611,53 @@ function FindSurgeonsContent() {
         {sortedAndFilteredSearchResults.length > 0 && (
           <Card className="max-w-3xl mx-auto">
             <CardHeader>
-              <CardTitle>Search Results ({sortedAndFilteredSearchResults.length})</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle>Search Results ({sortedAndFilteredSearchResults.length})</CardTitle>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      disabled={isAddingAll || isSearching || isFetchingMore || isSavingSearch}
+                      className="bg-green-600 hover:bg-green-500 text-white"
+                    >
+                      {isAddingAll ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Adding All...
+                        </>
+                      ) : (
+                        <>
+                          <Users className="mr-2 h-4 w-4" />
+                          Add All Surgeons
+                        </>
+                      )}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle className="flex items-center gap-2">
+                        <AlertTriangle className="h-5 w-5 text-amber-500" />
+                        Add All {sortedAndFilteredSearchResults.length} Surgeons?
+                      </AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will add all {sortedAndFilteredSearchResults.length} surgeons from your search results to your personal list. 
+                        Surgeons that already exist in your list will be skipped.
+                        <br /><br />
+                        <strong>This action cannot be undone.</strong>
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction 
+                        onClick={handleAddAllSurgeons}
+                        className="bg-green-600 hover:bg-green-500"
+                      >
+                        <Users className="mr-2 h-4 w-4" />
+                        Add All {sortedAndFilteredSearchResults.length} Surgeons
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               {sortedAndFilteredSearchResults.map((result) => (
@@ -543,11 +692,28 @@ function FindSurgeonsContent() {
                         )}
                     </div>
                   </div>
-                  <Button size="sm" onClick={() => handleAddSurgeonFromApi(result)} className="w-full sm:w-auto flex-shrink-0 mt-2 sm:mt-0 self-center sm:self-auto">Add to My List</Button>
+                  <Button 
+                    size="sm" 
+                    onClick={() => handleAddSurgeonFromApi(result)} 
+                    disabled={isAddingAll || isSearching || isFetchingMore || isSavingSearch}
+                    className="w-full sm:w-auto flex-shrink-0 mt-2 sm:mt-0 self-center sm:self-auto"
+                  >
+                    {isAddingAll ? (
+                      <>
+                        <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                        Adding...
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="mr-2 h-3 w-3" />
+                        Add to My List
+                      </>
+                    )}
+                  </Button>
                 </Card>
               ))}
               {nextPageToken && (
-                <Button onClick={handleLoadMore} disabled={isFetchingMore || isSearching || isSavingSearch} className="w-full mt-4">
+                <Button onClick={handleLoadMore} disabled={isFetchingMore || isSearching || isSavingSearch || isAddingAll} className="w-full mt-4">
                   {isFetchingMore ? (
                     <> <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading More... </>
                   ) : (
