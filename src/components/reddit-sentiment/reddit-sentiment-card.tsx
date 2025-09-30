@@ -12,11 +12,12 @@ import type { SurgeonSentimentData } from '@/lib/reddit-sentiment-service';
 
 interface RedditSentimentCardProps {
   surgeonName: string;
+  clinicName?: string;
   initialData?: SurgeonSentimentData;
   onUpdate?: (data: SurgeonSentimentData) => void;
 }
 
-export function RedditSentimentCard({ surgeonName, initialData, onUpdate }: RedditSentimentCardProps) {
+export function RedditSentimentCard({ surgeonName, clinicName, initialData, onUpdate }: RedditSentimentCardProps) {
   const [data, setData] = useState<SurgeonSentimentData | null>(initialData || null);
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -54,6 +55,7 @@ export function RedditSentimentCard({ surgeonName, initialData, onUpdate }: Redd
             timeRange: 'year',
             includeComments: true,
             subreddits: ['HairTransplants', 'tressless', 'hair', 'all'],
+            clinicName,
           },
         }),
       });
@@ -291,7 +293,7 @@ export function RedditSentimentCard({ surgeonName, initialData, onUpdate }: Redd
           <div className="pt-4 border-t">
             <Button variant="outline" size="sm" asChild>
               <a
-                href={`https://www.reddit.com/search?q=${encodeURIComponent(surgeonName)}&sort=relevance&t=year`}
+                href={`https://www.reddit.com/search?q=${encodeURIComponent([surgeonName, clinicName].filter(Boolean).join(' '))}&sort=relevance&t=year`}
                 target="_blank"
                 rel="noopener noreferrer"
               >

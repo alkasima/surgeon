@@ -18,6 +18,7 @@ export interface SentimentAnalysisOptions {
   includeComments?: boolean;
   subreddits?: string[];
   minScore?: number; // Minimum Reddit score to include
+  clinicName?: string; // Optional clinic name to include in search
 }
 
 class RedditSentimentService {
@@ -43,13 +44,14 @@ class RedditSentimentService {
         timeRange,
         includeComments,
         subreddits,
+        clinicName: options.clinicName,
       });
 
       // Filter out low-quality mentions
       const filteredMentions = redditResults.mentions.filter(mention => 
         mention.score >= minScore && 
         mention.content.length > 10 && // Minimum content length
-        this.isRelevantMention(mention.content, surgeonName)
+        this.isRelevantMention(mention.content, surgeonName, options.clinicName)
       );
 
       // Extract text content for sentiment analysis
@@ -64,7 +66,7 @@ class RedditSentimentService {
         totalMentions: filteredMentions.length,
         sentiment,
         rawMentions: filteredMentions,
-        searchQuery: surgeonName,
+        searchQuery: redditResults.searchQuery,
         subreddits,
       };
     } catch (error) {
@@ -76,7 +78,7 @@ class RedditSentimentService {
   /**
    * Check if a mention is relevant to the surgeon
    */
-  private isRelevantMention(content: string, surgeonName: string): boolean {
+  private isRelevantMention(content: string, surgeonName: string, clinicName?: string): boolean {
     const contentLower = content.toLowerCase();
     const nameLower = surgeonName.toLowerCase();
     
@@ -87,12 +89,14 @@ class RedditSentimentService {
     // Check if the content contains the surgeon's name or last name
     const containsFullName = contentLower.includes(nameLower);
     const containsLastName = lastName.length > 2 && contentLower.includes(lastName);
+    const clinicLower = (clinicName || '').toLowerCase();
+    const containsClinic = clinicLower.length > 2 && contentLower.includes(clinicLower);
     
     // Also check for hair transplant related terms
     const hairTerms = ['hair transplant', 'hair restoration', 'fue', 'fut', 'hair loss', 'bald'];
     const containsHairTerms = hairTerms.some(term => contentLower.includes(term));
     
-    return (containsFullName || containsLastName) && containsHairTerms;
+    return (containsFullName || containsLastName || containsClinic) && containsHairTerms;
   }
 
   /**

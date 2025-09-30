@@ -14,9 +14,34 @@ import { RedditSentimentCard } from '@/components/reddit-sentiment';
 export default function RedditSentimentTestPage() {
   const [surgeonName, setSurgeonName] = useState('Dr. John Doe');
   const [testResults, setTestResults] = useState<any>(null);
+  const [clinicName, setClinicName] = useState('Beverly Hills Hair Group');
   const [isTesting, setIsTesting] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
+
+  const seedSampleSurgeon = async () => {
+    if (!user) {
+      toast({ title: 'Authentication Required', description: 'Please log in to seed data.', variant: 'destructive' });
+      return;
+    }
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch('/api/admin/seed-sample-surgeon', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast({ title: 'Sample Surgeon Added', description: `${json.surgeon.name} - ${json.surgeon.clinicName}` });
+        setSurgeonName(json.surgeon.name);
+        setClinicName(json.surgeon.clinicName);
+      } else {
+        throw new Error(json.error || 'Failed to seed');
+      }
+    } catch (e) {
+      toast({ title: 'Seeding Failed', description: e instanceof Error ? e.message : 'Unknown error', variant: 'destructive' });
+    }
+  };
 
   const testRedditAPI = async () => {
     if (!user) {
@@ -83,7 +108,10 @@ export default function RedditSentimentTestPage() {
           <CardContent className="space-y-6">
             {/* API Test */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-white">API Connection Test</h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-white">API Connection Test</h3>
+                <Button onClick={seedSampleSurgeon} className="bg-blue-600 hover:bg-blue-500">Seed Sample Surgeon</Button>
+              </div>
               <Button 
                 onClick={testRedditAPI}
                 disabled={isTesting}
@@ -166,13 +194,23 @@ export default function RedditSentimentTestPage() {
                   className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="clinicName" className="text-gray-300">Clinic Name (optional)</Label>
+                <Input
+                  id="clinicName"
+                  value={clinicName}
+                  onChange={(e) => setClinicName(e.target.value)}
+                  placeholder="Enter clinic name to include"
+                  className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
+                />
+              </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Sentiment Analysis Component */}
         {surgeonName && (
-          <RedditSentimentCard surgeonName={surgeonName} />
+          <RedditSentimentCard surgeonName={surgeonName} clinicName={clinicName || undefined} />
         )}
 
         {/* Setup Instructions */}

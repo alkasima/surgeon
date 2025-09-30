@@ -88,7 +88,7 @@ export function SurgeonModal() {
               <AiToolsTab surgeon={selectedSurgeon} />
             </TabsContent>
             <TabsContent value="reddit" className="mt-4">
-              <RedditSentimentCard surgeonName={selectedSurgeon.name} />
+              <RedditSentimentCard surgeonName={selectedSurgeon.name} clinicName={selectedSurgeon.clinicName} />
             </TabsContent>
           </Tabs>
         </div>

@@ -95,6 +95,7 @@ class RedditAPIService {
       timeRange?: 'day' | 'week' | 'month' | 'year' | 'all';
       includeComments?: boolean;
       subreddits?: string[];
+      clinicName?: string;
     } = {}
   ): Promise<RedditSearchResult> {
     if (!this.isReady()) {
@@ -114,48 +115,62 @@ class RedditAPIService {
     try {
       // Search in specific subreddits or all of Reddit
       const searchTarget = subreddits.length > 0 ? subreddits : ['all'];
+      const queryVariants = this.buildSearchQueryVariants(surgeonName, options.clinicName);
+      const perVariantLimit = Math.max(10, Math.ceil(limit / Math.max(1, queryVariants.length)));
       
       for (const subreddit of searchTarget) {
-        // Search for posts
-        const posts = await this.searchPosts(surgeonName, subreddit, limit, timeRange);
-        
-        for (const post of posts) {
-          mentions.push({
-            type: 'post',
-            content: `${post.title} ${post.selftext}`.trim(),
-            author: post.author,
-            subreddit: post.subreddit,
-            score: post.score,
-            created_utc: post.created_utc,
-            permalink: post.permalink,
-            url: post.url,
-          });
-        }
-
-        // Search for comments if requested
-        if (includeComments) {
-          const comments = await this.searchComments(surgeonName, subreddit, limit, timeRange);
+        for (const variant of queryVariants) {
+          // Search for posts
+          const posts = await this.searchPosts(variant, subreddit, perVariantLimit, timeRange);
           
-          for (const comment of comments) {
+          for (const post of posts) {
             mentions.push({
-              type: 'comment',
-              content: comment.body,
-              author: comment.author,
-              subreddit: subreddit,
-              score: comment.score,
-              created_utc: comment.created_utc,
-              permalink: comment.permalink,
+              type: 'post',
+              content: `${post.title} ${post.selftext}`.trim(),
+              author: post.author,
+              subreddit: post.subreddit,
+              score: post.score,
+              created_utc: post.created_utc,
+              permalink: post.permalink,
+              url: post.url,
             });
+          }
+
+          // Search for comments if requested
+          if (includeComments) {
+            const comments = await this.searchComments(variant, subreddit, perVariantLimit, timeRange);
+            
+            for (const comment of comments) {
+              mentions.push({
+                type: 'comment',
+                content: comment.body,
+                author: comment.author,
+                subreddit: subreddit,
+                score: comment.score,
+                created_utc: comment.created_utc,
+                permalink: comment.permalink,
+              });
+            }
           }
         }
       }
 
-      totalFound = mentions.length;
+      // Dedupe by type+permalink
+      const seen = new Set<string>();
+      const deduped: RedditMention[] = [];
+      for (const m of mentions) {
+        const key = `${m.type}:${m.permalink}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          deduped.push(m);
+        }
+      }
+      totalFound = deduped.length;
 
       return {
-        mentions,
+        mentions: deduped,
         totalFound,
-        searchQuery: surgeonName,
+        searchQuery: queryVariants.join(' | '),
         timestamp: Date.now(),
       };
     } catch (error) {
@@ -176,7 +191,7 @@ class RedditAPIService {
     if (!this.snoowrap) throw new Error('Reddit API not initialized');
 
     try {
-      const searchQuery = this.buildSearchQuery(query);
+      const searchQuery = query; // Already built by caller
       const subredditObj = subreddit === 'all' ? this.snoowrap.getSubreddit('all') : this.snoowrap.getSubreddit(subreddit);
       
       const results = await subredditObj.search({
@@ -217,7 +232,7 @@ class RedditAPIService {
     if (!this.snoowrap) throw new Error('Reddit API not initialized');
 
     try {
-      const searchQuery = this.buildSearchQuery(query);
+      const searchQuery = query; // Already built by caller
       const subredditObj = subreddit === 'all' ? this.snoowrap.getSubreddit('all') : this.snoowrap.getSubreddit(subreddit);
       
       const results = await subredditObj.search({
@@ -246,17 +261,63 @@ class RedditAPIService {
   /**
    * Build a search query optimized for finding surgeon mentions
    */
-  private buildSearchQuery(surgeonName: string): string {
-    // Clean and optimize the surgeon name for Reddit search
+  private buildSearchQuery(surgeonName: string, clinicName?: string): string {
+    // Clean and optimize the surgeon and clinic names for Reddit search
     const cleanName = surgeonName
-      .replace(/[^\w\s.-]/g, '') // Remove special characters except dots and dashes
+      .replace(/[^\w\s.-]/g, '')
+      .trim();
+    const nameNoTitle = cleanName.replace(/^(dr\.?\s*)/i, '').trim();
+    const lastName = nameNoTitle.split(/\s+/).pop() || '';
+    const cleanClinic = (clinicName || '')
+      .replace(/[^\w\s.-]/g, '')
       .trim();
 
-    // Add hair transplant related terms to improve relevance
+    // Hair transplant related terms
     const hairTerms = ['hair transplant', 'hair restoration', 'FUE', 'FUT', 'hair loss'];
-    const queryTerms = [cleanName, ...hairTerms];
-    
-    return queryTerms.join(' ');
+
+    // Build OR group for name/clinic variants
+    const nameVariants = [cleanName, nameNoTitle, lastName].filter(v => v && v.length > 2);
+    const clinicVariants = cleanClinic ? [cleanClinic] : [];
+    const nameOrClinic = [...nameVariants, ...clinicVariants]
+      .map(term => (term.includes(' ') ? `"${term}"` : term))
+      .join(' OR ');
+
+    const hairOr = hairTerms
+      .map(term => (term.includes(' ') ? `"${term}"` : term))
+      .join(' OR ');
+
+    // Require at least one of (name OR clinic) AND at least one hair term
+    return `(${nameOrClinic}) (${hairOr})`;
+  }
+
+  /**
+   * Build multiple simple variants to increase recall
+   */
+  private buildSearchQueryVariants(surgeonName: string, clinicName?: string): string[] {
+    const clean = (s: string) => s.replace(/[^\w\s.-]/g, '').trim();
+    const cleanName = clean(surgeonName);
+    const nameNoTitle = cleanName.replace(/^(dr\.?\s*)/i, '').trim();
+    const lastName = (nameNoTitle.split(/\s+/).pop() || '').trim();
+    const cleanClinic = clinicName ? clean(clinicName) : '';
+
+    const hair = ['"hair transplant"', 'FUE', 'FUT', 'hairline', 'grafts'];
+
+    const bases: string[] = [];
+    if (cleanName) bases.push(`"${cleanName}"`);
+    if (nameNoTitle && nameNoTitle !== cleanName) bases.push(`"${nameNoTitle}"`);
+    if (lastName && lastName.length > 2) bases.push(lastName);
+    if (cleanClinic) bases.push(`"${cleanClinic}"`);
+
+    const variants: string[] = [];
+    for (const b of bases) {
+      variants.push(`${b} ${hair[0]}`);
+      variants.push(`${b} ${hair[1]}`);
+    }
+    if (cleanName && cleanClinic) {
+      variants.push(`"${cleanName}" "${cleanClinic}" ${hair[0]}`);
+    }
+
+    return Array.from(new Set(variants));
   }
 
   /**
