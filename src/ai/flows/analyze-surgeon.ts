@@ -35,10 +35,10 @@ export async function analyzeSurgeon(input: AnalyzeSurgeonInput): Promise<Analyz
     return result;
   } catch (error) {
     console.error('[analyzeSurgeon Flow] Error during execution:', error);
-    // Consider how you want to propagate errors to the client
-    // For now, re-throwing will make it visible in server logs.
-    // You might want to return a specific error structure if the client needs to handle it.
-    throw new Error(`Failed to analyze surgeon. Details: ${error instanceof Error ? error.message : String(error)}`);
+    // Fallback: generate a simple heuristic analysis so UI continues to work when AI is unavailable
+    const suitabilityAnalysis = simpleHeuristicAnalysis(input.surgeonPublicInfo, input.userPrivateTrackingData);
+    const suggestedNextSteps = simpleNextSteps();
+    return { suitabilityAnalysis, suggestedNextSteps };
   }
 }
 
@@ -79,3 +79,25 @@ const analyzeSurgeonFlow = ai.defineFlow(
     }
   }
 );
+
+function simpleHeuristicAnalysis(publicInfo: string, privateInfo: string): string {
+  const base = `${publicInfo || ''} ${privateInfo || ''}`.toLowerCase();
+  const hasFUE = base.includes('fue');
+  const hasFUT = base.includes('fut');
+  const hasRobotic = base.includes('robot');
+  const strengths = [
+    hasFUE && 'Experience with FUE',
+    hasFUT && 'Experience with FUT',
+    hasRobotic && 'Robotic capabilities',
+  ].filter(Boolean).join('; ');
+  return `Preliminary assessment based on available info. ${strengths ? `Strengths: ${strengths}.` : 'Limited specialty signals detected.'} Recommend verifying case counts, graft pricing, and patient results.`;
+}
+
+function simpleNextSteps(): string {
+  return [
+    'Request recent case photos (front, top, crown, donor).',
+    'Ask for average graft survival rate and technician involvement.',
+    'Confirm pricing per graft and what is included.',
+    'Schedule a consultation to validate plan and donor capacity.',
+  ].join(' ');
+}

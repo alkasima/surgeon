@@ -32,7 +32,9 @@ export async function summarizeNotes(input: SummarizeNotesInput): Promise<Summar
     return result;
   } catch (error) {
     console.error('[summarizeNotes Flow] Error during execution:', error);
-    throw new Error(`Failed to summarize notes. Details: ${error instanceof Error ? error.message : String(error)}`);
+    // Fallback local summary so the UI doesn't hard fail when AI service is down
+    const summary = simpleLocalSummarize(input.notes, input.length);
+    return { summary };
   }
 }
 
@@ -65,3 +67,13 @@ const summarizeNotesFlow = ai.defineFlow(
     }
   }
 );
+
+function simpleLocalSummarize(text: string, length: 'short' | 'medium' | 'long'): string {
+  const clean = (text || '').replace(/\s+/g, ' ').trim();
+  if (!clean) return 'No content available to summarize.';
+  const sentences = clean.split(/(?<=[.!?])\s+/).slice(0, 20);
+  const target = length === 'short' ? 2 : length === 'medium' ? 5 : 8;
+  const summary = sentences.slice(0, target).join(' ');
+  const limit = length === 'short' ? 280 : length === 'medium' ? 600 : 1000;
+  return summary.length > limit ? summary.slice(0, limit - 1) + '…' : summary;
+}
