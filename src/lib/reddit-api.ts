@@ -98,10 +98,6 @@ class RedditAPIService {
       clinicName?: string;
     } = {}
   ): Promise<RedditSearchResult> {
-    if (!this.isReady()) {
-      throw new Error('Reddit API not initialized');
-    }
-
     const {
       limit = 50,
       timeRange = 'year',
@@ -121,7 +117,9 @@ class RedditAPIService {
       for (const subreddit of searchTarget) {
         for (const variant of queryVariants) {
           // Search for posts
-          const posts = await this.searchPosts(variant, subreddit, perVariantLimit, timeRange);
+          const posts = this.isReady()
+            ? await this.searchPosts(variant, subreddit, perVariantLimit, timeRange)
+            : await this.publicSearchPosts(variant, subreddit, perVariantLimit, timeRange);
           
           for (const post of posts) {
             mentions.push({
@@ -138,7 +136,9 @@ class RedditAPIService {
 
           // Search for comments if requested
           if (includeComments) {
-            const comments = await this.searchComments(variant, subreddit, perVariantLimit, timeRange);
+            const comments = this.isReady()
+              ? await this.searchComments(variant, subreddit, perVariantLimit, timeRange)
+              : await this.publicSearchComments(variant, subreddit, perVariantLimit, timeRange);
             
             for (const comment of comments) {
               mentions.push({
@@ -216,7 +216,13 @@ class RedditAPIService {
       }));
     } catch (error) {
       console.error('Error searching posts:', error);
-      return [];
+      // Fallback to public unauthenticated search if OAuth fails (e.g., invalid_grant)
+      try {
+        return await this.publicSearchPosts(query, subreddit, limit, timeRange);
+      } catch (fallbackError) {
+        console.error('Fallback public post search failed:', fallbackError);
+        return [];
+      }
     }
   }
 
@@ -254,7 +260,13 @@ class RedditAPIService {
       }));
     } catch (error) {
       console.error('Error searching comments:', error);
-      return [];
+      // Fallback to public unauthenticated search if OAuth fails (e.g., invalid_grant)
+      try {
+        return await this.publicSearchComments(query, subreddit, limit, timeRange);
+      } catch (fallbackError) {
+        console.error('Fallback public comment search failed:', fallbackError);
+        return [];
+      }
     }
   }
 
@@ -288,6 +300,88 @@ class RedditAPIService {
 
     // Require at least one of (name OR clinic) AND at least one hair term
     return `(${nameOrClinic}) (${hairOr})`;
+  }
+
+  // Fallback unauthenticated search using public Reddit JSON API
+  private async publicSearchPosts(
+    query: string,
+    subreddit: string,
+    limit: number,
+    timeRange: string
+  ): Promise<RedditPost[]> {
+    try {
+      const base = subreddit === 'all'
+        ? `https://www.reddit.com/search.json`
+        : `https://www.reddit.com/r/${encodeURIComponent(subreddit)}/search.json`;
+      const params = new URLSearchParams({
+        q: query,
+        sort: 'relevance',
+        t: timeRange,
+        limit: String(limit),
+        restrict_sr: subreddit === 'all' ? 'false' : 'true',
+      });
+      const res = await fetch(`${base}?${params.toString()}`, { headers: { 'User-Agent': 'HairTransplantCRM/1.0' } });
+      const json = await res.json();
+      const children = (json?.data?.children ?? []).filter((c: any) => c.kind === 't3');
+      return children.map((c: any) => {
+        const d = c.data;
+        return {
+          id: d.id,
+          title: d.title,
+          selftext: d.selftext || '',
+          author: d.author,
+          subreddit: d.subreddit,
+          score: d.score,
+          num_comments: d.num_comments,
+          created_utc: d.created_utc * 1000,
+          permalink: `https://www.reddit.com${d.permalink}`,
+          url: d.url,
+          is_self: d.is_self,
+        } as RedditPost;
+      });
+    } catch (e) {
+      console.error('Public post search failed:', e);
+      return [];
+    }
+  }
+
+  private async publicSearchComments(
+    query: string,
+    subreddit: string,
+    limit: number,
+    timeRange: string
+  ): Promise<RedditComment[]> {
+    try {
+      const base = subreddit === 'all'
+        ? `https://www.reddit.com/search.json`
+        : `https://www.reddit.com/r/${encodeURIComponent(subreddit)}/search.json`;
+      const params = new URLSearchParams({
+        q: query,
+        sort: 'relevance',
+        t: timeRange,
+        limit: String(limit),
+        restrict_sr: subreddit === 'all' ? 'false' : 'true',
+        type: 'comment',
+      });
+      const res = await fetch(`${base}?${params.toString()}`, { headers: { 'User-Agent': 'HairTransplantCRM/1.0' } });
+      const json = await res.json();
+      const children = (json?.data?.children ?? []).filter((c: any) => c.kind === 't1');
+      return children.map((c: any) => {
+        const d = c.data;
+        return {
+          id: d.id,
+          body: d.body,
+          author: d.author,
+          score: d.score,
+          created_utc: d.created_utc * 1000,
+          permalink: `https://www.reddit.com${d.permalink}`,
+          parent_id: d.parent_id,
+        } as RedditComment;
+      });
+    } catch (e) {
+      console.error('Public comment search failed:', e);
+      return [];
+    }
   }
 
   /**

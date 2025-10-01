@@ -1,46 +1,29 @@
 
 "use client";
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { UserProvider } from '@/contexts/user-context';
 import { SurgeonsProvider } from '@/contexts/surgeons-context';
 import ModernDashboard from '@/components/dashboard/modern-dashboard';
 import { AdminRedirect } from '@/components/admin-redirect';
-import { Loader2 } from 'lucide-react';
+import LandingPage from '@/components/landing/landing-page';
 
-function ProtectedDashboard() {
-  const { user, loading } = useAuth();
-  const router = useRouter();
+export default function RootPage() {
+  const { user } = useAuth();
 
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push('/login');
-    }
-  }, [user, loading, router]);
-
-  if (loading || !user) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-16 w-16 animate-spin text-primary" />
-      </div>
-    );
+  // Visitors see the marketing landing page until they choose to sign up
+  if (!user) {
+    return <LandingPage />;
   }
 
-  return (
-    <>
-      <AdminRedirect />
-      <ModernDashboard />
-    </>
-  );
-}
-
-export default function Dashboard() {
+  // Authenticated users see the dashboard
   return (
     <UserProvider>
       <SurgeonsProvider>
-        <ProtectedDashboard />
+        <>
+          <AdminRedirect />
+          <ModernDashboard />
+        </>
       </SurgeonsProvider>
     </UserProvider>
   );
