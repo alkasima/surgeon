@@ -14,6 +14,7 @@ import {
   Activity,
   TrendingUp,
   BarChart3,
+  ClipboardList,
 } from "lucide-react"
 import { FollicleFlowLogo } from "@/components/icons"
 import {
@@ -66,6 +67,14 @@ const userNavItems = [
     description: "Performance metrics",
     color: "from-orange-500 to-red-500",
     bgColor: "from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20",
+  },
+  {
+    href: "/consultation",
+    label: "Consultation",
+    icon: ClipboardList,
+    description: "Prepare for consultations",
+    color: "from-violet-500 to-fuchsia-500",
+    bgColor: "from-violet-50 to-fuchsia-50 dark:from-violet-900/20 dark:to-fuchsia-900/20",
   },
 ]
 

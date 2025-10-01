@@ -16,7 +16,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { useUser } from '@/contexts/user-context';
 import { useToast } from '@/hooks/use-toast';
 import { UsageAnalytics } from '@/components/dashboard/usage-analytics';
-import { Loader2, User, BarChart3 } from 'lucide-react';
+import { Loader2, User, BarChart3, ClipboardList } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { updateUserProfileAction } from './actions';
 import { auth } from '@/lib/firebase';
@@ -136,6 +136,17 @@ function ProfilePageContent() {
               <div>
                 <Label>Total Credits Used</Label>
                 <p className="text-sm text-muted-foreground">{userData?.totalCreditsUsed || 0} credits</p>
+              </div>
+              <div>
+                <Label>Consultations</Label>
+                <div className="mt-2">
+                  <Button asChild variant="secondary">
+                    <a href="/consultation" className="inline-flex items-center gap-2">
+                      <ClipboardList className="h-4 w-4" />
+                      Open Consultation Form
+                    </a>
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>

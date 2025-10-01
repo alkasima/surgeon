@@ -10,6 +10,7 @@ import {
   ChevronLeft,
   HeartHandshake,
   User,
+  ClipboardList,
   Crown,
   Settings,
   LogOut,
@@ -101,6 +102,14 @@ export function ModernSidebar({ collapsed, onToggle, isMobile = false }: Sidebar
           active={pathname === "/analytics"}
           href="/analytics"
           subtitle="Performance metrics"
+        />
+        <SideItem 
+          icon={ClipboardList}
+          label="Consultation"
+          collapsed={collapsed}
+          active={pathname === "/consultation"}
+          href="/consultation"
+          subtitle="Prepare for consultations"
         />
       </nav>
 
