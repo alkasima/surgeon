@@ -34,7 +34,9 @@ export async function draftOutreachEmail(input: DraftOutreachEmailInput): Promis
     return result;
   } catch (error) {
     console.error('[draftOutreachEmail Flow] Error during execution:', error);
-    throw new Error(`Failed to draft outreach email. Details: ${error instanceof Error ? error.message : String(error)}`);
+    // Fallback: produce a reasonable template email locally so UI doesn't block when AI is unavailable
+    const emailDraft = generateFallbackEmail(input);
+    return { emailDraft };
   }
 }
 
@@ -78,3 +80,28 @@ const draftOutreachEmailFlow = ai.defineFlow(
     }
   }
 );
+
+function generateFallbackEmail(input: DraftOutreachEmailInput): string {
+  const { surgeonName, clinicName, surgeonSpecialties, userNotes, userName } = input;
+  const specialties = surgeonSpecialties || 'hair restoration';
+  const notes = (userNotes || '').trim();
+  const extra = notes ? `\n\nAdditional context: ${notes}` : '';
+  return (
+`Subject: Consultation Request – ${userName}
+
+Dear ${surgeonName} and the ${clinicName} team,
+
+I’m researching ${specialties.toLowerCase()} options and would like to request a consultation to discuss my case, donor capacity, recommended approach (FUE/FUT/robotic), estimated graft count, pricing, and expected timeline.
+
+Could you please share:
+- Available consultation slots (virtual or in-person)
+- Typical price range and what’s included
+- Recent case examples that match my situation
+- Technician involvement and graft handling protocol
+${extra}
+
+Thank you for your time. I look forward to your reply.
+
+Best regards,
+${userName}`);
+}
